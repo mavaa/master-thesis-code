@@ -3,26 +3,26 @@ import openai
 import os
 import shutil
 import subprocess
-import sys
+from .util import create_folder_if_not_exists
 
-# Globals
-test_program_folder="data/sources"
+build_folder = "data/builds"
 
-def compile_and_disassemble(folder_path, name):
-    build_dir = 'build/'
-    build_dir_relative = os.path.join(folder_path, build_dir)
-    if not os.path.exists(build_dir_relative):
-        os.makedirs(build_dir_relative)
+def compile(source, output):
+    create_folder_if_not_exists(os.path.dirname(output))
 
-    # Compile the code
-    subprocess.run(['gcc', '-o', f'{build_dir}{name}', f'{name}.c'], check=True, cwd=folder_path)
+    subprocess.run(['gcc', '-o', output, source], check=True)
 
-    # Create disassembly file
-    # Note to self: Running `r2 -qc pd @.main main` doesn't work, since only 'pd' will be passed to r2
-    # as command. Have to use `r2 -qc "pd @.main" main`.
+def disassemble(executable, output_folder):
+    create_folder_if_not_exists(output_folder)
+
+    basename = os.path.basename(executable)
+
+    # Note to self: Running `r2 -qc pd @.main main` doesn't work,
+    # since only 'pd' will be passed to r2 as command.
+    # Have to use `r2 -qc "pd @.main" main`.
     subprocess.run(
-            ['r2', '-qc', f'pd @.{name}', f'{build_dir}{name}'],
-            stdout=open(f'{build_dir_relative}/{name}_disassembly.txt', 'w'), check=True, cwd=folder_path)
+            ['r2', '-qc', f'pd @.{basename}', f'{executable}'],
+            stdout=open(f'{output_folder}/{basename}_d.txt', 'w'), check=True)
 
 def prepare_dataset(source_file_path, references_file_path):
     with open(source_file_path, 'r') as file:
@@ -72,19 +72,7 @@ def run_pipeline(test_program_folder):
             os.path.join(test_program_folder, f"{test_program}.c"),
             references_file_path)
 
-def clean(test_program_folder):
-    clean_path=f'{test_program_folder}/build'
-    if os.path.isdir(clean_path):
-        shutil.rmtree(clean_path)
+def clean():
+    if os.path.isdir(build_folder):
+        shutil.rmtree(build_folder)
 
-if __name__ == '__main__':
-    # Check if any command-line arguments were provided
-    if len(sys.argv) > 1:
-        # If the first argument is 'clean', run the clean function
-        if sys.argv[1] == 'clean':
-            clean(test_program_folder)
-        else:
-            print(f'Error: Unknown argument {sys.argv[1]}')
-    else:
-        # If no arguments were provided, run the run_pipeline function
-        run_pipeline(test_program_folder)
