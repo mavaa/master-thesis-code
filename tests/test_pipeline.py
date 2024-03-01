@@ -2,7 +2,7 @@ import pytest
 import os
 from src.pipeline import run_pipeline, clean # Import the functions directly
 
-test_program_folder = "sources"
+test_program_folder = "data/sources"
 
 def test_pipeline():
     run_pipeline(test_program_folder)

@@ -6,7 +6,7 @@ import subprocess
 import sys
 
 # Globals
-test_program_folder="sources"
+test_program_folder="data/sources"
 
 def compile_and_disassemble(folder_path, name):
     build_dir = 'build/'
