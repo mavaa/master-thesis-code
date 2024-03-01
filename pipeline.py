@@ -1,12 +1,25 @@
-import os
-import subprocess
-import openai
 from codebleu import calc_codebleu
+import openai
+import os
+import shutil
+import subprocess
+import sys
 
 def compile_and_disassemble(folder_path, name):
-    # Compile and create disassembly
-    subprocess.run(['gcc', '-o', name, f'{name}.c', '-I.'], check=True, cwd=folder_path)
-    subprocess.run(['r2', '-qc', f'pd @ {name}', f'{name}'], stdout=open(f'{folder_path}/{name}_disassembly.txt', 'w'), check=True, cwd=folder_path)
+    build_dir = 'build/'
+    build_dir_relative = os.path.join(folder_path, build_dir)
+    if not os.path.exists(build_dir_relative):
+        os.makedirs(build_dir_relative)
+
+    # Compile the code
+    subprocess.run(['gcc', '-o', f'{build_dir}{name}', f'{name}.c'], check=True, cwd=folder_path)
+
+    # Create disassembly file
+    # Note to self: Running `r2 -qc pd @.main main` doesn't work, since only 'pd' will be passed to r2
+    # as command. Have to use `r2 -qc "pd @.main" main`.
+    subprocess.run(
+            ['r2', '-qc', f'pd @.{name}', f'{build_dir}{name}'],
+            stdout=open(f'{build_dir_relative}/{name}_disassembly.txt', 'w'), check=True, cwd=folder_path)
 
 def prepare_dataset(source_file_path, references_file_path):
     with open(source_file_path, 'r') as file:
@@ -46,8 +59,7 @@ def evaluate():
     result = calc_codebleu([reference_code], [prediction_code], lang="c", weights=(0.25, 0.25, 0.25, 0.25), tokenizer=None)
     print(result)
 
-
-if __name__ == '__main__':
+def run_pipeline():
     test_program="main"
     test_program_folder="test_c_program"
     references_file_path = "references.txt"
@@ -57,3 +69,21 @@ if __name__ == '__main__':
     prepare_dataset(
             os.path.join(test_program_folder, f"{test_program}.c"),
             references_file_path)
+
+def clean():
+    clean_path='test_c_program/build'
+    if os.path.isdir(clean_path):
+        shutil.rmtree(clean_path)
+
+
+if __name__ == '__main__':
+    # Check if any command-line arguments were provided
+    if len(sys.argv) > 1:
+        # If the first argument is 'clean', run the clean function
+        if sys.argv[1] == 'clean':
+            clean()
+        else:
+            print(f'Error: Unknown argument {sys.argv[1]}')
+    else:
+        # If no arguments were provided, run the run_pipeline function
+        run_pipeline()
