@@ -5,6 +5,9 @@ import shutil
 import subprocess
 import sys
 
+# Globals
+test_program_folder="sources"
+
 def compile_and_disassemble(folder_path, name):
     build_dir = 'build/'
     build_dir_relative = os.path.join(folder_path, build_dir)
@@ -59,9 +62,8 @@ def evaluate():
     result = calc_codebleu([reference_code], [prediction_code], lang="c", weights=(0.25, 0.25, 0.25, 0.25), tokenizer=None)
     print(result)
 
-def run_pipeline():
+def run_pipeline(test_program_folder):
     test_program="main"
-    test_program_folder="test_c_program"
     references_file_path = "references.txt"
     prediction_file_path = "predictions.txt"
 
@@ -70,20 +72,19 @@ def run_pipeline():
             os.path.join(test_program_folder, f"{test_program}.c"),
             references_file_path)
 
-def clean():
-    clean_path='test_c_program/build'
+def clean(test_program_folder):
+    clean_path=f'{test_program_folder}/build'
     if os.path.isdir(clean_path):
         shutil.rmtree(clean_path)
-
 
 if __name__ == '__main__':
     # Check if any command-line arguments were provided
     if len(sys.argv) > 1:
         # If the first argument is 'clean', run the clean function
         if sys.argv[1] == 'clean':
-            clean()
+            clean(test_program_folder)
         else:
             print(f'Error: Unknown argument {sys.argv[1]}')
     else:
         # If no arguments were provided, run the run_pipeline function
-        run_pipeline()
+        run_pipeline(test_program_folder)
