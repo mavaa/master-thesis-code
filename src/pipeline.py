@@ -16,6 +16,9 @@ class Pipeline:
         create_folder_if_not_exists(self.builds_path)
         create_folder_if_not_exists(self.disassemblies_path)
 
+    def get_sources(self):
+        return os.listdir(self.sources_path)
+
     def compile(self, source, output):
         output_path = os.path.join(self.builds_path, output)
         source_path = os.path.join(self.sources_path, source)

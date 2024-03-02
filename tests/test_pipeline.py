@@ -25,6 +25,10 @@ def do_compile_return_data_path(setup_pipeline):
     setup_pipeline.compile(source_filename, executable_filename)
     return setup_pipeline.data_path
 
+def test_get_sources(setup_pipeline):
+    sources = setup_pipeline.get_sources()
+    assert sources == ['main.c'], "The sources array does not contain the expected file"
+
 def test_compile(setup_pipeline):
     data_path = do_compile_return_data_path(setup_pipeline)
     executable_path = os.path.join(data_path, "builds", executable_filename)

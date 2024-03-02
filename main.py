@@ -2,11 +2,8 @@ import sys
 import os
 from src.pipeline import Pipeline
 
-# Globals
-sources_folder="data/sources"
-
 def run_pipeline(pipeline):
-    for source_file in os.listdir(sources_folder):
+    for source_file in pipeline.get_sources():
         executable_filename = os.path.splitext(source_file)[0]
         pipeline.compile(source_file, executable_filename)
         pipeline.disassemble(executable_filename)
