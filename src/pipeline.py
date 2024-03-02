@@ -5,27 +5,33 @@ import subprocess
 from codebleu import calc_codebleu
 from .util import create_folder_if_not_exists
 
-class CodePipeline:
-    def __init__(self, build_folder="data/builds", openai_api_key='your_api_key_here'):
-        self.build_folder = build_folder
+class Pipeline:
+    def __init__(self, data_path="data/builds", openai_api_key='your_api_key_here'):
+        self.data_path = data_path
+        self.sources_path = os.path.join(data_path, "sources")
+        self.builds_path = os.path.join(data_path, "builds")
+        self.disassemblies_path = os.path.join(data_path, "disassemblies")
         self.openai_api_key = openai_api_key
 
+        create_folder_if_not_exists(self.builds_path)
+        create_folder_if_not_exists(self.disassemblies_path)
+
     def compile(self, source, output):
-        create_folder_if_not_exists(os.path.dirname(output))
+        output_path = os.path.join(self.builds_path, output)
+        source_path = os.path.join(self.sources_path, source)
+        subprocess.run(['gcc', '-o', output_path, source_path], check=True)
 
-        subprocess.run(['gcc', '-o', output, source], check=True)
+    def disassemble(self, executable):
 
-    def disassemble(self, executable, output_folder):
-        create_folder_if_not_exists(output_folder)
-
-        basename = os.path.basename(executable)
+        executable_path = os.path.join(self.builds_path, executable)
+        output_path = os.path.join(self.disassemblies_path, f'{executable}_d.txt')
 
         # Note to self: Running `r2 -qc pd @.main main` doesn't work,
         # since only 'pd' will be passed to r2 as command.
         # Have to use `r2 -qc "pd @.main" main`.
         subprocess.run(
-                ['r2', '-qc', f'pd @.{basename}', f'{executable}'],
-                stdout=open(f'{output_folder}/{basename}_d.txt', 'w'), check=True)
+                ['r2', '-qc', f'pd @.{executable}', f'{executable_path}'],
+                stdout=open(output_path, 'w'), check=True)
 
     def prepare_dataset(self, source_file_path, references_file_path):
         with open(source_file_path, 'r') as file:
@@ -70,12 +76,14 @@ class CodePipeline:
         references_file_path = "references.txt"
         prediction_file_path = "predictions.txt"
 
-        self.compile_and_disassemble(test_program_folder, test_program)
+        self.compile_and_disassemble(test_program_path, test_program)
         self.prepare_dataset(
-                os.path.join(test_program_folder, f"{test_program}.c"),
+                os.path.join(test_program_path, f"{test_program}.c"),
                 references_file_path)
 
     def clean(self):
-        if os.path.isdir(self.build_folder):
-            shutil.rmtree(self.build_folder)
+        if os.path.isdir(self.builds_path):
+            shutil.rmtree(self.builds_path)
+        if os.path.isdir(self.disassemblies_path):
+            shutil.rmtree(self.disassemblies_path)
 
