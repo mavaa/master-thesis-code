@@ -9,6 +9,8 @@ make
 r2 -qc "pd @ main" main > disassembly.txt
 ```
 
+NOTE: To output the disassembly, you HAVE to do `$ echo 'e scr.color=1' >> ~/.radare2rc` to disable color output!
+
 ## Dataset creation
 
 The source code will be the reference data. To use it whith CodeBLEU it needs to be put on a single line so that
