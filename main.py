@@ -1,27 +1,26 @@
 import sys
 import os
-from src.pipeline import compile, disassemble, clean
+from src.pipeline import Pipeline
 
 # Globals
 sources_folder="data/sources"
-builds_folder = "data/builds"
-disassemlies_folder = "data/disassemblies"
 
-def run_pipeline():
+def run_pipeline(pipeline):
     for source_file in os.listdir(sources_folder):
-        executable_path = os.path.join(builds_folder, os.path.splitext(source_file)[0])
-        compile(os.path.join(sources_folder, source_file), executable_path)
-        disassemble(executable_path, disassemlies_folder)
+        executable_filename = os.path.splitext(source_file)[0]
+        pipeline.compile(source_file, executable_filename)
+        pipeline.disassemble(executable_filename)
 
 
 if __name__ == '__main__':
+    pipeline = Pipeline("data")
     # Check if any command-line arguments were provided
     if len(sys.argv) > 1:
         # If the first argument is 'clean', run the clean function
         if sys.argv[1] == 'clean':
-            clean()
+            pipeline.clean()
         else:
             print(f'Error: Unknown argument {sys.argv[1]}')
     else:
         # If no arguments were provided, run the run_pipeline function
-        run_pipeline()
+        run_pipeline(pipeline)
