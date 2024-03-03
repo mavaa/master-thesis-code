@@ -3,9 +3,10 @@ import os
 from src.pipeline import Pipeline
 from src.util import create_folder_if_not_exists
 from shutil import copyfile
+from types import SimpleNamespace
 
-source_filename = "main.c"
-executable_filename = "main"
+source_filename = "helloworld.c"
+executable_filename = "helloworld"
 mock_prediction = "Mocked prediction"
 
 class Mock_Model:
@@ -13,7 +14,15 @@ class Mock_Model:
         self.api_key = api_key
 
     def generate_prediction(self, model, prompt, temperature):
-        return mock_prediction
+        return SimpleNamespace(
+            choices=[
+                SimpleNamespace(
+                    message=SimpleNamespace(
+                        content=mock_prediction
+                    )
+                )
+            ]
+        )
 
 @pytest.fixture
 def setup_pipeline(tmp_path):
@@ -31,7 +40,7 @@ def setup_pipeline(tmp_path):
 
 def test_get_sources(setup_pipeline):
     sources = setup_pipeline.get_sources()
-    assert sources == ['main.c'], "The sources array does not contain the expected file"
+    assert sources == [source_filename], "The sources array does not contain the expected file"
 
 def test_compile(setup_pipeline):
     setup_pipeline.compile(source_filename, executable_filename)

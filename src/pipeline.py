@@ -28,28 +28,30 @@ class Pipeline:
         executable_path = os.path.join(self.builds_path, executable)
         output_path = os.path.join(self.disassemblies_path, f'{executable}_d.txt')
 
-        # Note to self: Running `radare2 -qc pd @.main main` doesn't work,
+        # Note to self: Running `radare2 -qc pd @ main main` doesn't work,
         # since only 'pd' will be passed to radare2 as command.
-        # Have to use `radare2 -qc "pd @.main" main`.
+        # Have to use `radare2 -qc "pd @ main" main`.
+        # TODO: Test this with 'pd @ main', 'pd @.main' and just 'pd'
         subprocess.run(
-                ['radare2', '-qc', f'pd @.{executable}', f'{executable_path}'],
+                ['radare2', '-qc', f'pd', f'{executable_path}'],
                 stdout=open(output_path, 'w'), check=True)
 
     def add_source_to_dataset(self, source):
         source_path = os.path.join(self.sources_path, source)
 
         with open(source_path, 'r') as file:
-            source_code = ' '.join([line.strip() for line in file if line.strip()])
+            source_code = self.put_code_on_single_line(file)
         with open(self.references_file_path, 'w') as file:
             file.write(source_code)
 
     def generate_prediction(self, executable):
         disassembly_path = os.path.join(self.disassemblies_path, f'{executable}_d.txt')
         with open(disassembly_path, 'r') as file:
-            prompt=f"Reconstruct the original C source code from the following disassembly:\n{file.read()}",
+            prompt=f"Reconstruct the original C source code from the following disassembly:\n{file.read()}"
 
-        prediction = self.prediction_model.generate_prediction("code-davinci-002", prompt, 0)
-        return prediction
+        #prediction = self.prediction_model.generate_prediction("gpt-4", prompt, 0)
+        prediction = self.prediction_model.generate_prediction("gpt-3.5-turbo", prompt, 0)
+        return prediction.choices[0].message.content
 
     def save_prediction(self):
         with open('disassembly.txt', 'r') as file:
@@ -62,6 +64,9 @@ class Pipeline:
         with open(file_path, 'r') as file:
             code = file.read()
         return code
+
+    def put_code_on_single_line(self, input_file):
+        return ' '.join([line.strip() for line in input_file if line.strip()])
 
     def evaluate(self):
         # Read reference and prediction from their respective files
