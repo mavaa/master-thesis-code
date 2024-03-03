@@ -1,6 +1,6 @@
 import pytest
 import os
-from src.pipeline import Pipeline # Import the functions directly
+from src.pipeline import Pipeline
 from src.util import create_folder_if_not_exists
 from shutil import copyfile
 
