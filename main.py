@@ -27,7 +27,7 @@ def run_pipeline_print(pipeline):
         print()
         input()
 
-def run_pipeline_save(pipeline):
+def run_pipeline_evaluate(pipeline):
     for source_file in pipeline.get_sources():
         print("==============")
         print(f"File: {source_file}")
@@ -40,8 +40,13 @@ def run_pipeline_save(pipeline):
         print("Adding to reference dataset...")
         pipeline.add_source_to_dataset(source_file)
         print("Generating prediction...")
-        prediction = pipeline.generate_and_save_prediction(executable_filename)
+        pipeline.generate_and_save_prediction(executable_filename)
+        print("Evaluating...")
         print()
+    result = pipeline.evaluate()
+    print("Results:")
+    for key, value in result.items():
+        print(f"{key}: {value}")
 
 if __name__ == '__main__':
     pipeline = Pipeline(OpenAIModel(os.environ.get("OPENAI_API_KEY")), "data")
@@ -52,8 +57,8 @@ if __name__ == '__main__':
             pipeline.clean()
         elif sys.argv[1] == 'print':
             run_pipeline_print(pipeline)
-        elif sys.argv[1] == 'save':
-            run_pipeline_save(pipeline)
+        elif sys.argv[1] == 'evaluate':
+            run_pipeline_evaluate(pipeline)
         else:
             print(f'Error: Unknown argument {sys.argv[1]}')
     else:

@@ -33,9 +33,10 @@ class Pipeline:
         # since only 'pd' will be passed to radare2 as command.
         # Have to use `radare2 -qc "pd @ main" main`.
         # TODO: Test this with 'pd @ main', 'pd @.main' and just 'pd'
+        # TODO: Should look into the warnings that are supressed by the DEVNULL stderr
         subprocess.run(
                 ['radare2', '-qc', f'pd', f'{executable_path}'],
-                stdout=open(output_path, 'w'), check=True)
+                stdout=open(output_path, 'w'), check=True, stderr=subprocess.DEVNULL)
 
     def add_source_to_dataset(self, source):
         source_path = os.path.join(self.sources_path, source)
