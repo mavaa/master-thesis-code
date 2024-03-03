@@ -37,3 +37,7 @@ jobs:
         comment_mode: off
         files: |
           junit/test-results.xml
+    - name: Publish Code Coverage
+      uses: irongut/CodeCoverageSummary@v1.3.0
+      with:
+        filename: coverage.xml
