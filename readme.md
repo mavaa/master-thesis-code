@@ -54,3 +54,7 @@ print(result)
 ```
 
 A requirement.txt file for python requirements should also be produced.
+
+## Testing
+
+Run `ptw -- --cov=src` to contiously test and produce coverage tests.
