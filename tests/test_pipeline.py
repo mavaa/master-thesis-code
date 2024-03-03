@@ -28,17 +28,13 @@ def setup_pipeline(tmp_path):
 
     yield Pipeline(Mock_Model(), data_path)
 
-def do_compile_return_data_path(setup_pipeline):
-    setup_pipeline.compile(source_filename, executable_filename)
-    return setup_pipeline.data_path
-
 def test_get_sources(setup_pipeline):
     sources = setup_pipeline.get_sources()
     assert sources == ['main.c'], "The sources array does not contain the expected file"
 
 def test_compile(setup_pipeline):
-    data_path = do_compile_return_data_path(setup_pipeline)
-    executable_path = os.path.join(data_path, "builds", executable_filename)
+    setup_pipeline.compile(source_filename, executable_filename)
+    executable_path = os.path.join(setup_pipeline.data_path, "builds", executable_filename)
 
     # Check if the executable exists
     assert os.path.exists(executable_path), f"Executable {executable_path} was not created"
@@ -46,11 +42,11 @@ def test_compile(setup_pipeline):
     assert os.access(executable_path, os.X_OK), "File is not executable"
 
 def test_disassemble(setup_pipeline):
-    data_path = do_compile_return_data_path(setup_pipeline)
+    setup_pipeline.compile(source_filename, executable_filename)
 
     setup_pipeline.disassemble(executable_filename)
 
-    disassembly_file = os.path.join(data_path, "disassemblies", f'{executable_filename}_d.txt')
+    disassembly_file = os.path.join(setup_pipeline.data_path, "disassemblies", f'{executable_filename}_d.txt')
     assert os.path.exists(disassembly_file), f"Disassembly file ({disassembly_file}) does not exist after pipeline execution."
 
 def test_add_source_to_dataset(setup_pipeline):
