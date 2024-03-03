@@ -1,4 +1,0 @@
-#!/bin/bash
-# Wrapper script to run radare2 through Docker
-echo "R2 Received command: $*"
-docker run --rm -v "$(pwd):/work" radare/radare2 r2 "$@"

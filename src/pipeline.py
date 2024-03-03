@@ -29,11 +29,11 @@ class Pipeline:
         executable_path = os.path.join(self.builds_path, executable)
         output_path = os.path.join(self.disassemblies_path, f'{executable}_d.txt')
 
-        # Note to self: Running `r2 -qc pd @.main main` doesn't work,
-        # since only 'pd' will be passed to r2 as command.
-        # Have to use `r2 -qc "pd @.main" main`.
+        # Note to self: Running `radare2 -qc pd @.main main` doesn't work,
+        # since only 'pd' will be passed to radare2 as command.
+        # Have to use `radare2 -qc "pd @.main" main`.
         subprocess.run(
-                ['r2', '-qc', f'pd @.{executable}', f'{executable_path}'],
+                ['radare2', '-qc', f'pd @.{executable}', f'{executable_path}'],
                 stdout=open(output_path, 'w'), check=True)
 
     def prepare_dataset(self, source_file_path, references_file_path):

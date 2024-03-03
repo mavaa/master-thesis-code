@@ -6,7 +6,7 @@ main.c contains some simple code, with a Makefile to build it. Then I create a d
 
 ```
 make
-r2 -qc "pd @ main" main > disassembly.txt
+radare2 -qc "pd @ main" main > disassembly.txt
 ```
 
 NOTE: To output the disassembly, you HAVE to do `$ echo 'e scr.color=1' >> ~/.radare2rc` to disable color output!
