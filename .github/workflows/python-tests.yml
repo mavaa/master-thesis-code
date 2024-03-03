@@ -16,7 +16,7 @@ jobs:
     - name: Install system dependencies
       run: |
         sudo snap install radare2 --classic
-        echo 'e scr.color=1' >> ~/.radare2rc`
+        echo 'e scr.color=1' >> ~/.radare2rc
     - name: Install Python dependencies
       run: |
         python -m pip install --upgrade pip
