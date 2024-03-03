@@ -16,6 +16,10 @@ jobs:
     - name: Setup radare2 wrapper script
       run: |
         export PATH="$PATH:$PWD/.github/bin"
+        echo 'e scr.color=1' >> ~/.radare2rc`
+    - name: Echo path
+      run: |
+        echo $PATH
     - name: Install Python dependencies
       run: |
         python -m pip install --upgrade pip
