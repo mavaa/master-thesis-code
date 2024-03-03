@@ -11,7 +11,7 @@ class Pipeline:
         self.builds_path = os.path.join(data_path, "builds")
         self.disassemblies_path = os.path.join(data_path, "disassemblies")
         self.references_file_path = os.path.join(data_path, "references.txt")
-        self.pretiction_model = prediction_model
+        self.prediction_model = prediction_model
 
         create_folder_if_not_exists(self.builds_path)
         create_folder_if_not_exists(self.disassemblies_path)
@@ -43,15 +43,13 @@ class Pipeline:
         with open(self.references_file_path, 'w') as file:
             file.write(source_code)
 
-    def generate_prediction(self, disassembly):
-        openai.api_key = self.openai_api_key
-        response = openai.Completion.create(
-          engine="code-davinci-002",
-          prompt=f"Reconstruct the original C source code from the following disassembly:\n{disassembly}",
-          temperature=0.5,
-          max_tokens=150
-        )
-        return response.choices[0].text.strip()
+    def generate_prediction(self, executable):
+        disassembly_path = os.path.join(self.disassemblies_path, f'{executable}_d.txt')
+        with open(disassembly_path, 'r') as file:
+            prompt=f"Reconstruct the original C source code from the following disassembly:\n{file.read()}",
+
+        prediction = self.prediction_model.generate_prediction("code-davinci-002", prompt, 0)
+        return prediction
 
     def save_prediction(self):
         with open('disassembly.txt', 'r') as file:

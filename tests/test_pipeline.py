@@ -6,13 +6,14 @@ from shutil import copyfile
 
 source_filename = "main.c"
 executable_filename = "main"
+mock_prediction = "Mocked prediction"
 
 class Mock_Model:
     def __init__(self, api_key='your_api_key_here'):
         self.api_key = api_key
 
     def generate_prediction(self, model, prompt, temperature):
-        return ""
+        return mock_prediction
 
 @pytest.fixture
 def setup_pipeline(tmp_path):
@@ -43,7 +44,6 @@ def test_compile(setup_pipeline):
 
 def test_disassemble(setup_pipeline):
     setup_pipeline.compile(source_filename, executable_filename)
-
     setup_pipeline.disassemble(executable_filename)
 
     disassembly_file = os.path.join(setup_pipeline.data_path, "disassemblies", f'{executable_filename}_d.txt')
@@ -59,6 +59,13 @@ def test_add_source_to_dataset(setup_pipeline):
 
     print(reference_file_content)
     assert reference_file_content == '#include <stdio.h> int main() { printf("Hello, World!\\n"); return 0; }'
+
+def test_generate_prediction(setup_pipeline):
+    setup_pipeline.compile(source_filename, executable_filename)
+    setup_pipeline.disassemble(executable_filename)
+    prediction = setup_pipeline.generate_prediction(executable_filename)
+
+    assert prediction == mock_prediction, f'Unexpected prediction: {prediction}'
 
 def test_clean_function(setup_pipeline):
     assert os.path.exists(setup_pipeline.builds_path), "Build directory does not exist before clean function execution."
