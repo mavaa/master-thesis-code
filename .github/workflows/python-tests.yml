@@ -15,11 +15,15 @@ jobs:
         python-version: '3.8'
     - name: Setup radare2 wrapper script
       run: |
-        export PATH="$PATH:$PWD/.github/bin"
+        echo "$PWD/.github/bin" >> $GITHUB_PATH
+        export PATH="$PATH:"
         echo 'e scr.color=1' >> ~/.radare2rc
     - name: Echo path
       run: |
         echo $PATH
+    - name: See env
+      run: |
+        env
     - name: Install Python dependencies
       run: |
         python -m pip install --upgrade pip
