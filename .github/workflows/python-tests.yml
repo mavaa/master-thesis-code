@@ -17,6 +17,7 @@ jobs:
       run: |
         snap install radare2 --classic
     - name: Check the snap folder
+      run: |
         find /snap/bin
     - name: Try to run r2
       run: |
