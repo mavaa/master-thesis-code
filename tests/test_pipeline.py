@@ -7,6 +7,13 @@ from shutil import copyfile
 source_filename = "main.c"
 executable_filename = "main"
 
+class Mock_Model:
+    def __init__(self, api_key='your_api_key_here'):
+        self.api_key = api_key
+
+    def generate_prediction(self, model, prompt, temperature):
+        return ""
+
 @pytest.fixture
 def setup_pipeline(tmp_path):
     # Setup data folders and copy main.c
@@ -19,7 +26,7 @@ def setup_pipeline(tmp_path):
     copyfile(os.path.join("data/sources/", source_filename),
              os.path.join(sources_path, source_filename))
 
-    yield Pipeline(data_path)
+    yield Pipeline(Mock_Model(), data_path)
 
 def do_compile_return_data_path(setup_pipeline):
     setup_pipeline.compile(source_filename, executable_filename)

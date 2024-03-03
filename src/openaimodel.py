@@ -5,7 +5,6 @@ class OpenAIModel:
         self.client = OpenAI(
             api_key=api_key
         )
-        self.api_key = api_key
 
     def generate_prediction(self, model, prompt, temperature):
         chat_completion = self.client.chat.completions.create(

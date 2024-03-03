@@ -9,7 +9,7 @@ def setup_model():
     yield OpenAIModel(api_key)
 
 def test_openaimodel_create(setup_model):
-    assert setup_model.api_key == api_key, "API key was not set correctly"
+    assert setup_model.client.api_key == api_key, "API key was not set correctly"
 
 # Test to do code coverage in the generate_prediction function
 @pytest.fixture

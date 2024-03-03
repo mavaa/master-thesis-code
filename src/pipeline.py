@@ -5,12 +5,13 @@ from codebleu import calc_codebleu
 from .util import create_folder_if_not_exists
 
 class Pipeline:
-    def __init__(self, data_path="data/builds"):
+    def __init__(self, prediction_model, data_path="data/builds"):
         self.data_path = data_path
         self.sources_path = os.path.join(data_path, "sources")
         self.builds_path = os.path.join(data_path, "builds")
         self.disassemblies_path = os.path.join(data_path, "disassemblies")
         self.references_file_path = os.path.join(data_path, "references.txt")
+        self.pretiction_model = prediction_model
 
         create_folder_if_not_exists(self.builds_path)
         create_folder_if_not_exists(self.disassemblies_path)
