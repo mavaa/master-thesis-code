@@ -4,6 +4,7 @@ from src.pipeline import Pipeline
 from src.util import create_folder_if_not_exists
 from shutil import copyfile
 from types import SimpleNamespace
+from pathlib import Path
 
 source_filename = "helloworld.c"
 executable_filename = "helloworld"
@@ -66,7 +67,7 @@ def test_add_source_to_dataset(setup_pipeline):
     with open(setup_pipeline.references_file_path, 'r') as file:
         reference_file_content  = file.read()
 
-    assert reference_file_content == '#include <stdio.h> int main() { printf("Hello, World!\\n"); return 0; }'
+    assert reference_file_content == '#include <stdio.h> int main() { printf("Hello, World!\\n"); return 0; }\n'
 
 def test_generate_prediction(setup_pipeline):
     setup_pipeline.compile(source_filename, executable_filename)
@@ -85,7 +86,7 @@ def test_generate_and_save_prediction(setup_pipeline):
     with open(setup_pipeline.predictions_file_path, 'r') as file:
         prediction_file_content  = file.read()
 
-    assert prediction_file_content == mock_prediction
+    assert prediction_file_content == mock_prediction + '\n'
 
 
 @pytest.mark.parametrize("source,expected", [
@@ -100,8 +101,15 @@ def test_put_code_on_single_line(source, expected, setup_pipeline):
 
 
 def test_clean_function(setup_pipeline):
+    Path(setup_pipeline.references_file_path).touch()
+    Path(setup_pipeline.predictions_file_path).touch()
     assert os.path.exists(setup_pipeline.builds_path), "Build directory does not exist before clean function execution."
     assert os.path.exists(setup_pipeline.disassemblies_path), "Disassemblies directory does not exist before clean function execution."
+    assert os.path.exists(setup_pipeline.references_file_path), "Reference file does not exist before clean function execution."
+    assert os.path.exists(setup_pipeline.predictions_file_path), "Predictions file does not exist before clean function execution."
+
     setup_pipeline.clean()
     assert not os.path.exists(setup_pipeline.builds_path), "Build directory exists after clean function execution."
     assert not os.path.exists(setup_pipeline.disassemblies_path), "Disassemblies directory exists after clean function execution."
+    assert not os.path.exists(setup_pipeline.references_file_path), "Reference file exists after clean function execution."
+    assert not os.path.exists(setup_pipeline.predictions_file_path), "Predictions file exists after clean function execution."

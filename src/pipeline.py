@@ -42,8 +42,8 @@ class Pipeline:
 
         with open(source_path, 'r') as file:
             source_code = self.put_code_on_single_line(file)
-        with open(self.references_file_path, 'w') as file:
-            file.write(source_code)
+        with open(self.references_file_path, 'a') as file:
+            file.write(source_code + '\n')
 
     def generate_prediction(self, executable):
         disassembly_path = os.path.join(self.disassemblies_path, f'{executable}_d.txt')
@@ -55,9 +55,9 @@ class Pipeline:
         return prediction.choices[0].message.content
 
     def generate_and_save_prediction(self, executable):
-        prediction = self.generate_prediction(executable)
-        with open(self.predictions_file_path, 'w') as file:
-            file.write(prediction.replace('\n', ' '))
+        prediction = self.generate_prediction(executable).replace("```", "")
+        with open(self.predictions_file_path, 'a') as file:
+            file.write(self.put_code_on_single_line(prediction.split('\n')) + '\n')
 
     def read_code_from_file(self, file_path):
         with open(file_path, 'r') as file:
@@ -81,4 +81,7 @@ class Pipeline:
             shutil.rmtree(self.builds_path)
         if os.path.isdir(self.disassemblies_path):
             shutil.rmtree(self.disassemblies_path)
-
+        if os.path.exists(self.references_file_path):
+            os.remove(self.references_file_path)
+        if os.path.exists(self.predictions_file_path):
+            os.remove(self.predictions_file_path)

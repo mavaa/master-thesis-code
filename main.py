@@ -3,7 +3,7 @@ import os
 from src.pipeline import Pipeline
 from src.openaimodel import OpenAIModel
 
-def run_pipeline(pipeline):
+def run_pipeline_print(pipeline):
     for source_file in pipeline.get_sources():
         print("==============")
         print(f"File: {source_file}")
@@ -27,6 +27,21 @@ def run_pipeline(pipeline):
         print()
         input()
 
+def run_pipeline_save(pipeline):
+    for source_file in pipeline.get_sources():
+        print("==============")
+        print(f"File: {source_file}")
+        print("==============")
+        executable_filename = os.path.splitext(source_file)[0]
+        print("Compiling...")
+        pipeline.compile(source_file, executable_filename)
+        print("Creating disassembly...")
+        pipeline.disassemble(executable_filename)
+        print("Adding to reference dataset...")
+        pipeline.add_source_to_dataset(source_file)
+        print("Generating prediction...")
+        prediction = pipeline.generate_and_save_prediction(executable_filename)
+        print()
 
 if __name__ == '__main__':
     pipeline = Pipeline(OpenAIModel(os.environ.get("OPENAI_API_KEY")), "data")
@@ -35,8 +50,11 @@ if __name__ == '__main__':
         # If the first argument is 'clean', run the clean function
         if sys.argv[1] == 'clean':
             pipeline.clean()
+        elif sys.argv[1] == 'print':
+            run_pipeline_print(pipeline)
+        elif sys.argv[1] == 'save':
+            run_pipeline_save(pipeline)
         else:
             print(f'Error: Unknown argument {sys.argv[1]}')
     else:
-        # If no arguments were provided, run the run_pipeline function
-        run_pipeline(pipeline)
+        print(f'Error: expected \'clean\', \'print\' or \'save\' argument')
