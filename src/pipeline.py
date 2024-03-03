@@ -75,16 +75,6 @@ class Pipeline:
         result = calc_codebleu([reference_code], [prediction_code], lang="c", weights=(0.25, 0.25, 0.25, 0.25), tokenizer=None)
         print(result)
 
-    def run_pipeline(self):
-        test_program="main"
-        references_file_path = "references.txt"
-        prediction_file_path = "predictions.txt"
-
-        self.compile_and_disassemble(test_program_path, test_program)
-        self.prepare_dataset(
-                os.path.join(test_program_path, f"{test_program}.c"),
-                references_file_path)
-
     def clean(self):
         if os.path.isdir(self.builds_path):
             shutil.rmtree(self.builds_path)
