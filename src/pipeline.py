@@ -11,6 +11,7 @@ class Pipeline:
         self.builds_path = os.path.join(data_path, "builds")
         self.disassemblies_path = os.path.join(data_path, "disassemblies")
         self.references_file_path = os.path.join(data_path, "references.txt")
+        self.predictions_file_path = os.path.join(data_path, "predictions.txt")
         self.prediction_model = prediction_model
 
         create_folder_if_not_exists(self.builds_path)
@@ -53,11 +54,9 @@ class Pipeline:
         prediction = self.prediction_model.generate_prediction("gpt-3.5-turbo", prompt, 0)
         return prediction.choices[0].message.content
 
-    def save_prediction(self):
-        with open('disassembly.txt', 'r') as file:
-            disassembly = file.read()
-        prediction = self.generate_prediction(disassembly)
-        with open('predictions.txt', 'w') as file:
+    def generate_and_save_prediction(self, executable):
+        prediction = self.generate_prediction(executable)
+        with open(self.predictions_file_path, 'w') as file:
             file.write(prediction.replace('\n', ' '))
 
     def read_code_from_file(self, file_path):

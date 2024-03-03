@@ -66,7 +66,6 @@ def test_add_source_to_dataset(setup_pipeline):
     with open(setup_pipeline.references_file_path, 'r') as file:
         reference_file_content  = file.read()
 
-    print(reference_file_content)
     assert reference_file_content == '#include <stdio.h> int main() { printf("Hello, World!\\n"); return 0; }'
 
 def test_generate_prediction(setup_pipeline):
@@ -75,6 +74,19 @@ def test_generate_prediction(setup_pipeline):
     prediction = setup_pipeline.generate_prediction(executable_filename)
 
     assert prediction == mock_prediction, f'Unexpected prediction: {prediction}'
+
+def test_generate_and_save_prediction(setup_pipeline):
+    setup_pipeline.compile(source_filename, executable_filename)
+    setup_pipeline.disassemble(executable_filename)
+    setup_pipeline.generate_and_save_prediction(executable_filename)
+
+    assert os.path.exists(setup_pipeline.predictions_file_path), "Predictions file does not exist."
+
+    with open(setup_pipeline.predictions_file_path, 'r') as file:
+        prediction_file_content  = file.read()
+
+    assert prediction_file_content == mock_prediction
+
 
 @pytest.mark.parametrize("source,expected", [
     (["hey", "there", "you"], "hey there you"),
