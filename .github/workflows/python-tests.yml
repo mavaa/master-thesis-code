@@ -45,4 +45,5 @@ jobs:
         output: file
     - name: Write code coverage to job summary
       run: |
+        echo "## Code coverage" >> $GITHUB_STEP_SUMMARY
         cat code-coverage-results.md >> $GITHUB_STEP_SUMMARY
