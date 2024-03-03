@@ -7,6 +7,11 @@ jobs:
 
     runs-on: ubuntu-latest
 
+    permissions:
+      contents: read
+      issues: read
+      checks: write
+
     steps:
     - uses: actions/checkout@v4
     - name: Set up Python
@@ -29,5 +34,6 @@ jobs:
       uses: EnricoMi/publish-unit-test-result-action@v2
       if: always()
       with:
+        comment_mode: off
         files: |
           junit/test-results.xml
