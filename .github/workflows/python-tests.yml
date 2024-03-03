@@ -16,7 +16,7 @@ jobs:
     - name: Setup radare2 wrapper script
       run: |
         export PATH="$PATH:$PWD/.github/bin"
-        echo 'e scr.color=1' >> ~/.radare2rc`
+        echo 'e scr.color=1' >> ~/.radare2rc
     - name: Echo path
       run: |
         echo $PATH
