@@ -70,11 +70,10 @@ class Pipeline:
     def evaluate(self):
         # Read reference and prediction from their respective files
 
-        reference_code = self.read_code_from_file(reference_file_path)
-        prediction_code = self.read_code_from_file(prediction_file_path)
+        reference_code = self.read_code_from_file(self.references_file_path)
+        prediction_code = self.read_code_from_file(self.predictions_file_path)
 
-        result = calc_codebleu([reference_code], [prediction_code], lang="c", weights=(0.25, 0.25, 0.25, 0.25), tokenizer=None)
-        print(result)
+        return calc_codebleu([reference_code], [prediction_code], lang="c", weights=(0.25, 0.25, 0.25, 0.25), tokenizer=None)
 
     def clean(self):
         if os.path.isdir(self.builds_path):

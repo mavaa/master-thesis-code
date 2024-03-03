@@ -88,7 +88,6 @@ def test_generate_and_save_prediction(setup_pipeline):
 
     assert prediction_file_content == mock_prediction + '\n'
 
-
 @pytest.mark.parametrize("source,expected", [
     (["hey", "there", "you"], "hey there you"),
     (["quick", "brown", "", "fox"], "quick brown fox"),
@@ -98,7 +97,18 @@ def test_put_code_on_single_line(source, expected, setup_pipeline):
     result = setup_pipeline.put_code_on_single_line(source)
     assert result == expected
 
+def test_evaluate(setup_pipeline):
+    setup_pipeline.compile(source_filename, executable_filename)
+    setup_pipeline.disassemble(executable_filename)
+    setup_pipeline.generate_and_save_prediction(executable_filename)
+    setup_pipeline.add_source_to_dataset(source_filename)
+    result = setup_pipeline.evaluate()
 
+    assert isinstance(result['codebleu'], (int, float)), "Value is not a number"
+    assert isinstance(result['ngram_match_score'], (int, float)), "Value is not a number"
+    assert isinstance(result['weighted_ngram_match_score'], (int, float)), "Value is not a number"
+    assert isinstance(result['syntax_match_score'], (int, float)), "Value is not a number"
+    assert isinstance(result['dataflow_match_score'], (int, float)), "Value is not a number"
 
 def test_clean_function(setup_pipeline):
     Path(setup_pipeline.references_file_path).touch()
