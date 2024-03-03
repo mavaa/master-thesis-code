@@ -76,6 +76,17 @@ def test_generate_prediction(setup_pipeline):
 
     assert prediction == mock_prediction, f'Unexpected prediction: {prediction}'
 
+@pytest.mark.parametrize("source,expected", [
+    (["hey", "there", "you"], "hey there you"),
+    (["quick", "brown", "", "fox"], "quick brown fox"),
+    (["hey", "  you", "there  "], "hey you there")
+])
+def test_put_code_on_single_line(source, expected, setup_pipeline):
+    result = setup_pipeline.put_code_on_single_line(source)
+    assert result == expected
+
+
+
 def test_clean_function(setup_pipeline):
     assert os.path.exists(setup_pipeline.builds_path), "Build directory does not exist before clean function execution."
     assert os.path.exists(setup_pipeline.disassemblies_path), "Disassemblies directory does not exist before clean function execution."
