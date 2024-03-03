@@ -46,6 +46,17 @@ def test_disassemble(setup_pipeline):
     disassembly_file = os.path.join(data_path, "disassemblies", f'{executable_filename}_d.txt')
     assert os.path.exists(disassembly_file), f"Disassembly file ({disassembly_file}) does not exist after pipeline execution."
 
+def test_add_source_to_dataset(setup_pipeline):
+    setup_pipeline.add_source_to_dataset(source_filename)
+
+    assert os.path.exists(setup_pipeline.references_file_path), "Reference file does not exist after pipeline execution."
+
+    with open(setup_pipeline.references_file_path, 'r') as file:
+        reference_file_content  = file.read()
+
+    print(reference_file_content)
+    assert reference_file_content == '#include <stdio.h> int main() { printf("Hello, World!\\n"); return 0; }'
+
 def test_clean_function(setup_pipeline):
     assert os.path.exists(setup_pipeline.builds_path), "Build directory does not exist before clean function execution."
     assert os.path.exists(setup_pipeline.disassemblies_path), "Disassemblies directory does not exist before clean function execution."

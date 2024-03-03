@@ -7,6 +7,7 @@ def run_pipeline(pipeline):
         executable_filename = os.path.splitext(source_file)[0]
         pipeline.compile(source_file, executable_filename)
         pipeline.disassemble(executable_filename)
+        pipeline.add_source_to_dataset(source_file)
 
 
 if __name__ == '__main__':

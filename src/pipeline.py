@@ -11,6 +11,7 @@ class Pipeline:
         self.sources_path = os.path.join(data_path, "sources")
         self.builds_path = os.path.join(data_path, "builds")
         self.disassemblies_path = os.path.join(data_path, "disassemblies")
+        self.references_file_path = os.path.join(data_path, "references.txt")
         self.openai_api_key = openai_api_key
 
         create_folder_if_not_exists(self.builds_path)
@@ -25,7 +26,6 @@ class Pipeline:
         subprocess.run(['gcc', '-o', output_path, source_path], check=True)
 
     def disassemble(self, executable):
-
         executable_path = os.path.join(self.builds_path, executable)
         output_path = os.path.join(self.disassemblies_path, f'{executable}_d.txt')
 
@@ -36,10 +36,12 @@ class Pipeline:
                 ['radare2', '-qc', f'pd @.{executable}', f'{executable_path}'],
                 stdout=open(output_path, 'w'), check=True)
 
-    def prepare_dataset(self, source_file_path, references_file_path):
-        with open(source_file_path, 'r') as file:
-            source_code = file.read().replace('\n', ' ')
-        with open(references_file_path, 'w') as file:
+    def add_source_to_dataset(self, source):
+        source_path = os.path.join(self.sources_path, source)
+
+        with open(source_path, 'r') as file:
+            source_code = ' '.join([line.strip() for line in file if line.strip()])
+        with open(self.references_file_path, 'w') as file:
             file.write(source_code)
 
     def generate_prediction(self, disassembly):
@@ -58,7 +60,6 @@ class Pipeline:
         prediction = self.generate_prediction(disassembly)
         with open('predictions.txt', 'w') as file:
             file.write(prediction.replace('\n', ' '))
-
 
     def read_code_from_file(self, file_path):
         with open(file_path, 'r') as file:
