@@ -1,12 +1,14 @@
 from openai import OpenAI
 
 class OpenAIModel:
-    def __init__(self, api_key='your_api_key_here'):
+    def __init__(self, api_key, model, temperature):
         self.client = OpenAI(
             api_key=api_key
         )
+        self.model = model
+        self.temperature = temperature
 
-    def generate_prediction(self, model, prompt, temperature):
+    def generate_prediction(self, prompt):
         chat_completion = self.client.chat.completions.create(
             messages=[
                 {
@@ -14,7 +16,7 @@ class OpenAIModel:
                     "content": prompt,
                 }
             ],
-            model=model,
-            temperature=temperature
+            model=self.model,
+            temperature=self.temperature
         )
         return chat_completion

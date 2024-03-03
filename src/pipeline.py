@@ -51,8 +51,7 @@ class Pipeline:
         with open(disassembly_path, 'r') as file:
             prompt=f"Reconstruct the original C source code from the following disassembly:\n{file.read()}"
 
-        #prediction = self.prediction_model.generate_prediction("gpt-4", prompt, 0)
-        prediction = self.prediction_model.generate_prediction("gpt-3.5-turbo", prompt, 0)
+        prediction = self.prediction_model.generate_prediction(prompt)
         return prediction.choices[0].message.content
 
     def generate_and_save_prediction(self, executable):

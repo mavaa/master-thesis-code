@@ -11,10 +11,10 @@ executable_filename = "helloworld"
 mock_prediction = "Mocked prediction"
 
 class Mock_Model:
-    def __init__(self, api_key='your_api_key_here'):
+    def __init__(self, api_key, model, temperature):
         self.api_key = api_key
 
-    def generate_prediction(self, model, prompt, temperature):
+    def generate_prediction(self, prompt):
         return SimpleNamespace(
             choices=[
                 SimpleNamespace(
@@ -37,7 +37,7 @@ def setup_pipeline(tmp_path):
     copyfile(os.path.join("data/sources/", source_filename),
              os.path.join(sources_path, source_filename))
 
-    yield Pipeline(Mock_Model(), data_path)
+    yield Pipeline(Mock_Model("testkey", "test-model", 0.5), data_path)
 
 def test_get_sources(setup_pipeline):
     sources = setup_pipeline.get_sources()

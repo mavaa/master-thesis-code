@@ -3,19 +3,12 @@ import os
 from src.pipeline import Pipeline
 from src.openaimodel import OpenAIModel
 
+# Print the original code and evaluation for each file
 def run_pipeline_print(pipeline):
+    pipeline = create_new_pipeline()
     for source_file in pipeline.get_sources():
-        print("==============")
-        print(f"File: {source_file}")
-        print("==============")
-        executable_filename = os.path.splitext(source_file)[0]
-        print("Compiling...")
-        pipeline.compile(source_file, executable_filename)
-        print("Creating disassembly...")
-        pipeline.disassemble(executable_filename)
-        print("Adding to reference dataset...")
-        pipeline.add_source_to_dataset(source_file)
-        print("Generating prediction...")
+        executable_filename = compile_disassemble_reference(pipeline, source_file)
+
         prediction = pipeline.generate_prediction(executable_filename)
         print()
         print("Original code:")
@@ -27,38 +20,55 @@ def run_pipeline_print(pipeline):
         print()
         input()
 
-def run_pipeline_evaluate(pipeline):
+# Run predictions and evaluate
+def run_pipeline_evaluate():
+    pipeline = create_new_pipeline()
     for source_file in pipeline.get_sources():
-        print("==============")
-        print(f"File: {source_file}")
-        print("==============")
-        executable_filename = os.path.splitext(source_file)[0]
-        print("Compiling...")
-        pipeline.compile(source_file, executable_filename)
-        print("Creating disassembly...")
-        pipeline.disassemble(executable_filename)
-        print("Adding to reference dataset...")
-        pipeline.add_source_to_dataset(source_file)
-        print("Generating prediction...")
+        executable_filename = compile_disassemble_reference(pipeline, source_file)
         pipeline.generate_and_save_prediction(executable_filename)
-        print("Evaluating...")
         print()
+
+    print("Evaluating...")
     result = pipeline.evaluate()
     print("Results:")
     for key, value in result.items():
         print(f"{key}: {value}")
 
+def compile_disassemble_reference(pipeline, source_file):
+    print("==============")
+    print(f"File: {source_file}")
+    print("==============")
+    executable_filename = os.path.splitext(source_file)[0]
+    print("Compiling...")
+    pipeline.compile(source_file, executable_filename)
+    print("Creating disassembly...")
+    pipeline.disassemble(executable_filename)
+    print("Adding to reference dataset...")
+    pipeline.add_source_to_dataset(source_file)
+    print("Generating prediction...")
+    return executable_filename;
+
+def clean_pipeline():
+    create_new_pipeline().clean()
+
+def create_new_pipeline():
+    model_name = "gpt-3.5-turbo"
+    # model_name = "gpt-4"
+    model = OpenAIModel(os.environ.get("OPENAI_API_KEY"), model_name, 0)
+    return Pipeline(model, "data")
+
+
 if __name__ == '__main__':
-    pipeline = Pipeline(OpenAIModel(os.environ.get("OPENAI_API_KEY")), "data")
     # Check if any command-line arguments were provided
     if len(sys.argv) > 1:
         # If the first argument is 'clean', run the clean function
         if sys.argv[1] == 'clean':
-            pipeline.clean()
+            clean_pipeline()
         elif sys.argv[1] == 'print':
-            run_pipeline_print(pipeline)
+            run_pipeline_print()
         elif sys.argv[1] == 'evaluate':
-            run_pipeline_evaluate(pipeline)
+            clean_pipeline() # Clean before we start doing anything
+            run_pipeline_evaluate()
         else:
             print(f'Error: Unknown argument {sys.argv[1]}')
     else:

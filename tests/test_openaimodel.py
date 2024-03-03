@@ -6,7 +6,7 @@ api_key = "replace_me"
 
 @pytest.fixture
 def setup_model():
-    yield OpenAIModel(api_key)
+    yield OpenAIModel(api_key, "test-model", 0.5)
 
 def test_openaimodel_create(setup_model):
     assert setup_model.client.api_key == api_key, "API key was not set correctly"
@@ -23,7 +23,7 @@ def mock_openai_client():
 
 def test_openaimodel_generate_prediction(mock_openai_client, setup_model):
     # Call the method
-    response = setup_model.generate_prediction("test-model", "test prompt", 0.5)
+    response = setup_model.generate_prediction("test prompt")
 
     # Assertions to ensure the mock was called as expected
     setup_model.client.chat.completions.create.assert_called_once_with(
