@@ -4,7 +4,7 @@ from src.pipeline import Pipeline
 from src.openaimodel import OpenAIModel
 
 # Print the original code and evaluation for each file
-def run_pipeline_print(pipeline):
+def run_pipeline_print():
     pipeline = create_new_pipeline()
     for source_file in pipeline.get_sources():
         executable_filename = compile_disassemble_reference(pipeline, source_file)
@@ -72,4 +72,4 @@ if __name__ == '__main__':
         else:
             print(f'Error: Unknown argument {sys.argv[1]}')
     else:
-        print(f'Error: expected \'clean\', \'print\' or \'save\' argument')
+        print(f'Error: expected \'clean\', \'print\' or \'evaluate\' argument')
