@@ -5,3 +5,4 @@ data/builds/
 data/references.txt
 data/predictions.txt
 .coverage
+.env
