@@ -5,9 +5,11 @@ from src.util import create_folder_if_not_exists
 from shutil import copyfile
 from types import SimpleNamespace
 from pathlib import Path
+from unittest.mock import MagicMock
 
-source_filename = "helloworld.c"
 executable_filename = "helloworld"
+source_filename = f"{executable_filename}.c"
+r2_decompile_filename = f"r2d_{executable_filename}.txt"
 mock_prediction = "Mocked prediction"
 
 class Mock_Model:
@@ -58,6 +60,21 @@ def test_disassemble(setup_pipeline):
 
     disassembly_file = os.path.join(setup_pipeline.data_path, "disassemblies", f'{executable_filename}_d.txt')
     assert os.path.exists(disassembly_file), f"Disassembly file ({disassembly_file}) does not exist after pipeline execution."
+
+def test_disassemble_calls_r2_func(setup_pipeline):
+    setup_pipeline.r2_run = MagicMock()
+
+    setup_pipeline.disassemble(executable_filename)
+
+    setup_pipeline.r2_run.assert_called_once()
+
+
+def test_r2_run(setup_pipeline):
+    r2_decompile_filepath = os.path.join(setup_pipeline.data_path, r2_decompile_filename)
+    setup_pipeline.compile(source_filename, executable_filename)
+    setup_pipeline.r2_run('pd', executable_filename, r2_decompile_filepath)
+
+    assert os.path.exists(r2_decompile_filepath), f"Decompiled file file ({r2_decompile_filepath}) does not exist after r2 execution."
 
 def test_add_source_to_dataset(setup_pipeline):
     setup_pipeline.add_source_to_dataset(source_filename)

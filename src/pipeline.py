@@ -26,7 +26,6 @@ class Pipeline:
         subprocess.run(['gcc', '-o', output_path, source_path], check=True)
 
     def disassemble(self, executable):
-        executable_path = os.path.join(self.builds_path, executable)
         output_path = os.path.join(self.disassemblies_path, f'{executable}_d.txt')
 
         # Note to self: Running `radare2 -qc pd @ main main` doesn't work,
@@ -34,8 +33,13 @@ class Pipeline:
         # Have to use `radare2 -qc "pd @ main" main`.
         # TODO: Test this with 'pd @ main', 'pd @.main' and just 'pd'
         # TODO: Should look into the warnings that are supressed by the DEVNULL stderr
+        self.r2_run('pd', executable, output_path)
+
+    def r2_run(self, command, executable, output_path):
+        executable_path = os.path.join(self.builds_path, executable)
+
         subprocess.run(
-                ['radare2', '-qc', f'pd', f'{executable_path}'],
+                ['radare2', '-qc', command, executable_path],
                 stdout=open(output_path, 'w'), check=True, stderr=subprocess.DEVNULL)
 
     def add_source_to_dataset(self, source):
