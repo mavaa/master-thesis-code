@@ -11,13 +11,16 @@ class Pipeline:
         self.builds_path = os.path.join(data_path, "builds")
         self.disassemblies_path = os.path.join(data_path, "disassemblies")
         self.r2d_path = os.path.join(data_path, "r2_decompile")
+        self.llmd_path = os.path.join(data_path, "llm_decompile")
         self.references_file_path = os.path.join(data_path, "references.txt")
-        self.predictions_file_path = os.path.join(data_path, "predictions.txt")
+        self.r2_predictions_file_path = os.path.join(data_path, "r2_predictions.txt")
+        self.llm_predictions_file_path = os.path.join(data_path, "llm_predictions.txt")
         self.prediction_model = prediction_model
 
         create_folder_if_not_exists(self.builds_path)
         create_folder_if_not_exists(self.disassemblies_path)
         create_folder_if_not_exists(self.r2d_path)
+        create_folder_if_not_exists(self.llmd_path)
 
     def get_sources(self):
         return os.listdir(self.sources_path)
@@ -40,6 +43,11 @@ class Pipeline:
     def r2_decompile(self, executable):
         output_path = os.path.join(self.r2d_path, f'{executable}.txt')
         self.r2_run('aaa;s main;pdg', executable, output_path)
+
+        with open(output_path, 'r') as output_file:
+            source_code = self.put_code_on_single_line(output_file)
+        with open(self.r2_predictions_file_path, 'a') as pred_file:
+            pred_file.write(source_code + '\n')
 
     def r2_run(self, command, executable, output_path):
         executable_path = os.path.join(self.builds_path, executable)
@@ -66,8 +74,12 @@ class Pipeline:
 
     def generate_and_save_prediction(self, executable):
         prediction = self.generate_prediction(executable).replace("```", "")
-        with open(self.predictions_file_path, 'a') as file:
+        with open(self.llm_predictions_file_path, 'a') as file:
             file.write(self.put_code_on_single_line(prediction.split('\n')) + '\n')
+
+        decompile_path = os.path.join(self.llmd_path, f'{executable}.c')
+        with open(decompile_path, 'w') as d_file:
+            d_file.write(prediction)
 
     def read_code_from_file(self, file_path):
         with open(file_path, 'r') as file:
@@ -77,11 +89,19 @@ class Pipeline:
     def put_code_on_single_line(self, input_file):
         return ' '.join([line.strip() for line in input_file if line.strip()])
 
-    def evaluate(self):
+    def evaluate_llm(self):
         # Read reference and prediction from their respective files
 
         reference_code = self.read_code_from_file(self.references_file_path)
-        prediction_code = self.read_code_from_file(self.predictions_file_path)
+        prediction_code = self.read_code_from_file(self.llm_predictions_file_path)
+
+        return calc_codebleu([reference_code], [prediction_code], lang="c", weights=(0.25, 0.25, 0.25, 0.25), tokenizer=None)
+
+    def evaluate_r2(self):
+        # Read reference and prediction from their respective files
+
+        reference_code = self.read_code_from_file(self.references_file_path)
+        prediction_code = self.read_code_from_file(self.r2_predictions_file_path)
 
         return calc_codebleu([reference_code], [prediction_code], lang="c", weights=(0.25, 0.25, 0.25, 0.25), tokenizer=None)
 
@@ -92,7 +112,9 @@ class Pipeline:
             shutil.rmtree(self.disassemblies_path)
         if os.path.isdir(self.r2d_path):
             shutil.rmtree(self.r2d_path)
+        if os.path.isdir(self.llmd_path):
+            shutil.rmtree(self.llmd_path)
         if os.path.exists(self.references_file_path):
             os.remove(self.references_file_path)
-        if os.path.exists(self.predictions_file_path):
-            os.remove(self.predictions_file_path)
+        if os.path.exists(self.llm_predictions_file_path):
+            os.remove(self.llm_predictions_file_path)

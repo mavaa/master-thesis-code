@@ -3,7 +3,10 @@ __pycache__/
 data/disassemblies/
 data/builds/
 data/ghidra/
+data/llm_decompile/
+data/r2_decompile/
 data/references.txt
-data/predictions.txt
+data/llm_predictions.txt
+data/r2_predictions.txt
 .coverage
 .env

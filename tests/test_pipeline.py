@@ -104,9 +104,9 @@ def test_generate_and_save_prediction(setup_pipeline):
     setup_pipeline.disassemble(executable_filename)
     setup_pipeline.generate_and_save_prediction(executable_filename)
 
-    assert os.path.exists(setup_pipeline.predictions_file_path), "Predictions file does not exist."
+    assert os.path.exists(setup_pipeline.llm_predictions_file_path), "Predictions file does not exist."
 
-    with open(setup_pipeline.predictions_file_path, 'r') as file:
+    with open(setup_pipeline.llm_predictions_file_path, 'r') as file:
         prediction_file_content  = file.read()
 
     assert prediction_file_content == mock_prediction + '\n'
@@ -125,7 +125,7 @@ def test_evaluate(setup_pipeline):
     setup_pipeline.disassemble(executable_filename)
     setup_pipeline.generate_and_save_prediction(executable_filename)
     setup_pipeline.add_source_to_dataset(source_filename)
-    result = setup_pipeline.evaluate()
+    result = setup_pipeline.evaluate_llm()
 
     assert isinstance(result['codebleu'], (int, float)), "Value is not a number"
     assert isinstance(result['ngram_match_score'], (int, float)), "Value is not a number"
@@ -135,16 +135,18 @@ def test_evaluate(setup_pipeline):
 
 def test_clean_function(setup_pipeline):
     Path(setup_pipeline.references_file_path).touch()
-    Path(setup_pipeline.predictions_file_path).touch()
+    Path(setup_pipeline.llm_predictions_file_path).touch()
     assert os.path.exists(setup_pipeline.builds_path), "Build directory does not exist before clean function execution."
     assert os.path.exists(setup_pipeline.disassemblies_path), "Disassemblies directory does not exist before clean function execution."
     assert os.path.exists(setup_pipeline.references_file_path), "Reference file does not exist before clean function execution."
-    assert os.path.exists(setup_pipeline.predictions_file_path), "Predictions file does not exist before clean function execution."
+    assert os.path.exists(setup_pipeline.llm_predictions_file_path), "Predictions file does not exist before clean function execution."
     assert os.path.exists(setup_pipeline.r2d_path), "r2 decompilation directory does not exist before clean function execution."
+    assert os.path.exists(setup_pipeline.llmd_path), "llm decompilation directory does not exist before clean function execution."
 
     setup_pipeline.clean()
     assert not os.path.exists(setup_pipeline.builds_path), "Build directory exists after clean function execution."
     assert not os.path.exists(setup_pipeline.disassemblies_path), "Disassemblies directory exists after clean function execution."
     assert not os.path.exists(setup_pipeline.references_file_path), "Reference file exists after clean function execution."
-    assert not os.path.exists(setup_pipeline.predictions_file_path), "Predictions file exists after clean function execution."
+    assert not os.path.exists(setup_pipeline.llm_predictions_file_path), "Predictions file exists after clean function execution."
     assert not os.path.exists(setup_pipeline.r2d_path), "r2 decompilation directory exists after clean function execution."
+    assert not os.path.exists(setup_pipeline.llmd_path), "llm decompilation directory exists after clean function execution."

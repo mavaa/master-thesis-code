@@ -28,10 +28,17 @@ def run_pipeline_evaluate():
         pipeline.generate_and_save_prediction(executable_filename)
         print()
 
-    print("Evaluating...")
-    result = pipeline.evaluate()
+    print("Evaluating LLM...")
+    result_llm = pipeline.evaluate_llm()
     print("Results:")
-    for key, value in result.items():
+    for key, value in result_llm.items():
+        print(f"{key}: {value}")
+
+    print()
+    print("Evaluating R2...")
+    result_r2 = pipeline.evaluate_r2()
+    print("Results:")
+    for key, value in result_r2.items():
         print(f"{key}: {value}")
 
 def compile_disassemble_reference(pipeline, source_file):
@@ -43,6 +50,8 @@ def compile_disassemble_reference(pipeline, source_file):
     pipeline.compile(source_file, executable_filename)
     print("Creating disassembly...")
     pipeline.disassemble(executable_filename)
+    print("Creating r2 decompiled files")
+    pipeline.r2_decompile(executable_filename)
     print("Adding to reference dataset...")
     pipeline.add_source_to_dataset(source_file)
     print("Generating prediction...")
