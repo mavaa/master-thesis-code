@@ -1,5 +1,25 @@
 # Initial process
 
+## Setup
+
+The following packages are needed:
+```
+radare2
+python3
+pip3
+pkg-config # Required to install r2ghidra
+```
+
+Install python requirements:
+```
+pip3 install -r requirements.txt
+```
+
+For the tests:
+```
+pip3 install pytest pytest-watcher
+```
+
 ## Compiling and creating disassembly
 
 main.c contains some simple code, with a Makefile to build it. Then I create a disassembly using:
