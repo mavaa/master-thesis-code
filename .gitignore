@@ -2,6 +2,7 @@
 __pycache__/
 data/disassemblies/
 data/builds/
+data/ghidra/
 data/references.txt
 data/predictions.txt
 .coverage
