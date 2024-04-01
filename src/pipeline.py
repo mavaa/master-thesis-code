@@ -10,12 +10,14 @@ class Pipeline:
         self.sources_path = os.path.join(data_path, "sources")
         self.builds_path = os.path.join(data_path, "builds")
         self.disassemblies_path = os.path.join(data_path, "disassemblies")
+        self.r2d_path = os.path.join(data_path, "r2_decompile")
         self.references_file_path = os.path.join(data_path, "references.txt")
         self.predictions_file_path = os.path.join(data_path, "predictions.txt")
         self.prediction_model = prediction_model
 
         create_folder_if_not_exists(self.builds_path)
         create_folder_if_not_exists(self.disassemblies_path)
+        create_folder_if_not_exists(self.r2d_path)
 
     def get_sources(self):
         return os.listdir(self.sources_path)
@@ -34,6 +36,10 @@ class Pipeline:
         # TODO: Test this with 'pd @ main', 'pd @.main' and just 'pd'
         # TODO: Should look into the warnings that are supressed by the DEVNULL stderr
         self.r2_run('pd', executable, output_path)
+
+    def r2_decompile(self, executable):
+        output_path = os.path.join(self.r2d_path, f'{executable}.txt')
+        self.r2_run('aaa;s main;pdg', executable, output_path)
 
     def r2_run(self, command, executable, output_path):
         executable_path = os.path.join(self.builds_path, executable)
@@ -84,6 +90,8 @@ class Pipeline:
             shutil.rmtree(self.builds_path)
         if os.path.isdir(self.disassemblies_path):
             shutil.rmtree(self.disassemblies_path)
+        if os.path.isdir(self.r2d_path):
+            shutil.rmtree(self.r2d_path)
         if os.path.exists(self.references_file_path):
             os.remove(self.references_file_path)
         if os.path.exists(self.predictions_file_path):

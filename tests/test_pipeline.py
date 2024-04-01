@@ -58,7 +58,7 @@ def test_disassemble(setup_pipeline):
     setup_pipeline.compile(source_filename, executable_filename)
     setup_pipeline.disassemble(executable_filename)
 
-    disassembly_file = os.path.join(setup_pipeline.data_path, "disassemblies", f'{executable_filename}_d.txt')
+    disassembly_file = os.path.join(setup_pipeline.disassemblies_path, f'{executable_filename}_d.txt')
     assert os.path.exists(disassembly_file), f"Disassembly file ({disassembly_file}) does not exist after pipeline execution."
 
 def test_disassemble_calls_r2_func(setup_pipeline):
@@ -68,13 +68,19 @@ def test_disassemble_calls_r2_func(setup_pipeline):
 
     setup_pipeline.r2_run.assert_called_once()
 
-
 def test_r2_run(setup_pipeline):
-    r2_decompile_filepath = os.path.join(setup_pipeline.data_path, r2_decompile_filename)
+    r2_out_path = os.path.join(setup_pipeline.data_path, "r2_out.txt")
     setup_pipeline.compile(source_filename, executable_filename)
-    setup_pipeline.r2_run('pd', executable_filename, r2_decompile_filepath)
+    setup_pipeline.r2_run('pd', executable_filename, r2_out_path)
 
-    assert os.path.exists(r2_decompile_filepath), f"Decompiled file file ({r2_decompile_filepath}) does not exist after r2 execution."
+    assert os.path.exists(r2_out_path), f"r2 output file ({r2_out_path}) does not exist after r2 execution."
+
+def test_decompile_r2(setup_pipeline):
+    setup_pipeline.compile(source_filename, executable_filename)
+    setup_pipeline.r2_decompile(executable_filename)
+
+    decompiled_file = os.path.join(setup_pipeline.r2d_path, f'{executable_filename}.txt')
+    assert os.path.exists(decompiled_file), f"Decompiled file ({decompiled_file}) does not exist."
 
 def test_add_source_to_dataset(setup_pipeline):
     setup_pipeline.add_source_to_dataset(source_filename)
@@ -134,9 +140,11 @@ def test_clean_function(setup_pipeline):
     assert os.path.exists(setup_pipeline.disassemblies_path), "Disassemblies directory does not exist before clean function execution."
     assert os.path.exists(setup_pipeline.references_file_path), "Reference file does not exist before clean function execution."
     assert os.path.exists(setup_pipeline.predictions_file_path), "Predictions file does not exist before clean function execution."
+    assert os.path.exists(setup_pipeline.r2d_path), "r2 decompilation directory does not exist before clean function execution."
 
     setup_pipeline.clean()
     assert not os.path.exists(setup_pipeline.builds_path), "Build directory exists after clean function execution."
     assert not os.path.exists(setup_pipeline.disassemblies_path), "Disassemblies directory exists after clean function execution."
     assert not os.path.exists(setup_pipeline.references_file_path), "Reference file exists after clean function execution."
     assert not os.path.exists(setup_pipeline.predictions_file_path), "Predictions file exists after clean function execution."
+    assert not os.path.exists(setup_pipeline.r2d_path), "r2 decompilation directory exists after clean function execution."
