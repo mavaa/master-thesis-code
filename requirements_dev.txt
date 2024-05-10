@@ -1,0 +1,4 @@
+pynvim
+pytest
+pytest-cov
+pytest-watch
