@@ -20,7 +20,7 @@ def extract_source(json_file_path, sources_path):
             task_id = task['task_id']
             c_func = task['c_func']
 
-            formatted_task_id = f"{task_id:02d}"
+            formatted_task_id = f"{task_id:03d}"
 
             filename = f"{sources_path}/task_{formatted_task_id}.c"
 
