@@ -1,13 +1,13 @@
 import pytest
 import os
+import magic
+import re
 from src.pipeline import Pipeline
 from src.util import create_folder_if_not_exists
 from shutil import copyfile
 from types import SimpleNamespace
 from pathlib import Path
 from unittest.mock import MagicMock
-import magic
-import re
 
 executable_filename = "helloworld"
 source_filename = f"{executable_filename}.c"
@@ -127,12 +127,24 @@ def test_put_code_on_single_line(source, expected, setup_pipeline):
     result = setup_pipeline.put_code_on_single_line(source)
     assert result == expected
 
-def test_evaluate(setup_pipeline):
+def test_evaluate_llm(setup_pipeline):
     setup_pipeline.compile(source_filename, executable_filename)
     setup_pipeline.disassemble(executable_filename)
     setup_pipeline.generate_and_save_prediction(executable_filename)
     setup_pipeline.add_source_to_dataset(source_filename)
     result = setup_pipeline.evaluate_llm()
+
+    assert isinstance(result['codebleu'], (int, float)), "Value is not a number"
+    assert isinstance(result['ngram_match_score'], (int, float)), "Value is not a number"
+    assert isinstance(result['weighted_ngram_match_score'], (int, float)), "Value is not a number"
+    assert isinstance(result['syntax_match_score'], (int, float)), "Value is not a number"
+    assert isinstance(result['dataflow_match_score'], (int, float)), "Value is not a number"
+
+def test_evaluate_r2(setup_pipeline):
+    setup_pipeline.compile(source_filename, executable_filename)
+    setup_pipeline.r2_decompile(executable_filename)
+    setup_pipeline.add_source_to_dataset(source_filename)
+    result = setup_pipeline.evaluate_r2()
 
     assert isinstance(result['codebleu'], (int, float)), "Value is not a number"
     assert isinstance(result['ngram_match_score'], (int, float)), "Value is not a number"

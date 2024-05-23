@@ -77,4 +77,4 @@ A requirement.txt file for python requirements should also be produced.
 
 ## Testing
 
-Run `ptw -- --cov=src` to contiously test and produce coverage tests.
+Run `ptw -- --cov=src --cov-report=term-missing` to contiously test and produce coverage tests.
