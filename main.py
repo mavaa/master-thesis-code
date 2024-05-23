@@ -38,14 +38,14 @@ def run_pipeline_evaluate(pipeline, args):
     result_llm = pipeline.evaluate_llm()
     print("Results:")
     for key, value in result_llm.items():
-        print(f"{key}: {value}")
+        print(f"{key}: {value:.2%}")
 
     print()
     print("Evaluating R2...")
     result_r2 = pipeline.evaluate_r2()
     print("Results:")
     for key, value in result_r2.items():
-        print(f"{key}: {value}")
+        print(f"{key}: {value:.2%}")
 
     results = {
         'LLM': result_llm,
@@ -60,7 +60,7 @@ def run_pipeline_evaluate(pipeline, args):
     headers = ["Metric", "LLM Score", "R2 Score"]
     table_data = []
     for key in result_llm.keys():
-        table_data.append([key, result_llm[key], result_r2[key]])
+        table_data.append([key, f"{result_llm[key]:.2%}", f"{result_r2[key]:.2%}"])
 
     print("\nLaTeX Table:")
     print(tabulate(table_data, headers, tablefmt="latex"))
