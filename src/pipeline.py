@@ -118,3 +118,5 @@ class Pipeline:
             os.remove(self.references_file_path)
         if os.path.exists(self.llm_predictions_file_path):
             os.remove(self.llm_predictions_file_path)
+        if os.path.exists(self.r2_predictions_file_path):
+            os.remove(self.r2_predictions_file_path)

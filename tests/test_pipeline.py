@@ -140,10 +140,12 @@ def test_evaluate(setup_pipeline):
 def test_clean_function(setup_pipeline):
     Path(setup_pipeline.references_file_path).touch()
     Path(setup_pipeline.llm_predictions_file_path).touch()
+    Path(setup_pipeline.r2_predictions_file_path).touch()
     assert os.path.exists(setup_pipeline.builds_path), "Build directory does not exist before clean function execution."
     assert os.path.exists(setup_pipeline.disassemblies_path), "Disassemblies directory does not exist before clean function execution."
     assert os.path.exists(setup_pipeline.references_file_path), "Reference file does not exist before clean function execution."
-    assert os.path.exists(setup_pipeline.llm_predictions_file_path), "Predictions file does not exist before clean function execution."
+    assert os.path.exists(setup_pipeline.llm_predictions_file_path), "LLM predictions file does not exist before clean function execution."
+    assert os.path.exists(setup_pipeline.r2_predictions_file_path), "R2 predictions file does not exist before clean function execution."
     assert os.path.exists(setup_pipeline.r2d_path), "r2 decompilation directory does not exist before clean function execution."
     assert os.path.exists(setup_pipeline.llmd_path), "llm decompilation directory does not exist before clean function execution."
 
@@ -152,6 +154,7 @@ def test_clean_function(setup_pipeline):
     assert not os.path.exists(setup_pipeline.disassemblies_path), "Disassemblies directory exists after clean function execution."
     assert not os.path.exists(setup_pipeline.references_file_path), "Reference file exists after clean function execution."
     assert not os.path.exists(setup_pipeline.llm_predictions_file_path), "Predictions file exists after clean function execution."
+    assert not os.path.exists(setup_pipeline.r2_predictions_file_path), "R2 predictions file exists after clean function execution."
     assert not os.path.exists(setup_pipeline.r2d_path), "r2 decompilation directory exists after clean function execution."
     assert not os.path.exists(setup_pipeline.llmd_path), "llm decompilation directory exists after clean function execution."
 
