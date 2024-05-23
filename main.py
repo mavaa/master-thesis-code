@@ -2,6 +2,8 @@ import sys
 import os
 from src.pipeline import Pipeline
 from src.openaimodel import OpenAIModel
+import pickle
+from tabulate import tabulate
 
 def run_pipeline_prepare(pipeline):
     for source_file in pipeline.get_sources():
@@ -43,6 +45,25 @@ def run_pipeline_evaluate(pipeline):
     print("Results:")
     for key, value in result_r2.items():
         print(f"{key}: {value}")
+
+    results = {
+        'LLM': result_llm,
+        'R2': result_r2
+    }
+
+    # Save results to a file
+    with open('results.pkl', 'wb') as f:
+        pickle.dump(results, f)
+
+    # Print results in a table format for LaTeX
+    headers = ["Metric", "LLM Score", "R2 Score"]
+    table_data = []
+    for key in result_llm.keys():
+        table_data.append([key, result_llm[key], result_r2[key]])
+
+    print("\nLaTeX Table:")
+    print(tabulate(table_data, headers, tablefmt="latex"))
+
 
 def compile_disassemble_reference(pipeline, source_file):
     print("==============")
