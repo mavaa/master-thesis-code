@@ -28,7 +28,7 @@ class Pipeline:
     def compile(self, source, output):
         output_path = os.path.join(self.builds_path, output)
         source_path = os.path.join(self.sources_path, source)
-        subprocess.run(['gcc', '-o', output_path, source_path], check=True)
+        subprocess.run(['gcc', '-c', '-o', output_path, source_path], check=True)
 
     def disassemble(self, executable):
         output_path = os.path.join(self.disassemblies_path, f'{executable}_d.txt')

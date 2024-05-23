@@ -6,6 +6,8 @@ from shutil import copyfile
 from types import SimpleNamespace
 from pathlib import Path
 from unittest.mock import MagicMock
+import magic
+import re
 
 executable_filename = "helloworld"
 source_filename = f"{executable_filename}.c"
@@ -51,8 +53,10 @@ def test_compile(setup_pipeline):
 
     # Check if the executable exists
     assert os.path.exists(executable_path), f"Executable {executable_path} was not created"
-    # Check if the file is executable
-    assert os.access(executable_path, os.X_OK), "File is not executable"
+
+    # Check if the file is an object file
+    file_type = magic.from_file(executable_path)
+    assert str_contains_word(file_type, 'ELF') and str_contains_word(file_type, 'relocatable'), f"File {executable_path} is not a valid object file. Detected type: {file_type}"
 
 def test_disassemble(setup_pipeline):
     setup_pipeline.compile(source_filename, executable_filename)
@@ -90,7 +94,7 @@ def test_add_source_to_dataset(setup_pipeline):
     with open(setup_pipeline.references_file_path, 'r') as file:
         reference_file_content  = file.read()
 
-    assert reference_file_content == '#include <stdio.h> int main() { printf("Hello, World!\\n"); return 0; }\n'
+    assert reference_file_content == '#include <stdio.h> int print_hello() { printf("Hello, World!\\n"); return 0; }\n'
 
 def test_generate_prediction(setup_pipeline):
     setup_pipeline.compile(source_filename, executable_filename)
@@ -150,3 +154,6 @@ def test_clean_function(setup_pipeline):
     assert not os.path.exists(setup_pipeline.llm_predictions_file_path), "Predictions file exists after clean function execution."
     assert not os.path.exists(setup_pipeline.r2d_path), "r2 decompilation directory exists after clean function execution."
     assert not os.path.exists(setup_pipeline.llmd_path), "llm decompilation directory exists after clean function execution."
+
+def str_contains_word(string, word):
+    return re.search(r'\b' + word + r'\b', string) is not None

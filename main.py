@@ -3,9 +3,11 @@ import os
 from src.pipeline import Pipeline
 from src.openaimodel import OpenAIModel
 
-# Print the original code and evaluation for each file
-def run_pipeline_print():
-    pipeline = create_new_pipeline()
+def run_pipeline_prepare(pipeline):
+    for source_file in pipeline.get_sources():
+        compile_disassemble_reference(pipeline, source_file)
+
+def run_pipeline_print(pipeline):
     for source_file in pipeline.get_sources():
         executable_filename = compile_disassemble_reference(pipeline, source_file)
 
@@ -21,8 +23,7 @@ def run_pipeline_print():
         input()
 
 # Run predictions and evaluate
-def run_pipeline_evaluate():
-    pipeline = create_new_pipeline()
+def run_pipeline_evaluate(pipeline):
     for source_file in pipeline.get_sources():
         executable_filename = compile_disassemble_reference(pipeline, source_file)
         pipeline.generate_and_save_prediction(executable_filename)

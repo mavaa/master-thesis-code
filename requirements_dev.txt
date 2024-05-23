@@ -2,3 +2,4 @@ pynvim
 pytest
 pytest-cov
 pytest-watch
+python-magic
