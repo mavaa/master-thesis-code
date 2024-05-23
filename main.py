@@ -1,5 +1,6 @@
 import sys
 import os
+import argparse
 from src.pipeline import Pipeline
 from src.openaimodel import OpenAIModel
 import pickle
@@ -17,7 +18,7 @@ def run_pipeline_print(pipeline):
         prediction = pipeline.generate_prediction(executable_filename)
         print()
         print("Original code:")
-        with open(os.path.join('data/sources', source_file)) as file:
+        with open(os.path.join(pipeline.data_path, 'sources', source_file)) as file:
             print(file.read())
         print()
         print("Prediction:")
@@ -26,7 +27,7 @@ def run_pipeline_print(pipeline):
         input()
 
 # Run predictions and evaluate
-def run_pipeline_evaluate(pipeline):
+def run_pipeline_evaluate(pipeline, results_filename):
     for source_file in pipeline.get_sources():
         executable_filename = compile_disassemble_reference(pipeline, source_file)
         print("Generating prediction...")
@@ -52,7 +53,7 @@ def run_pipeline_evaluate(pipeline):
     }
 
     # Save results to a file
-    with open('results.pkl', 'wb') as f:
+    with open(os.path.join(pipeline.data_path, results_filename), 'wb') as f:
         pickle.dump(results, f)
 
     # Print results in a table format for LaTeX
@@ -63,7 +64,6 @@ def run_pipeline_evaluate(pipeline):
 
     print("\nLaTeX Table:")
     print(tabulate(table_data, headers, tablefmt="latex"))
-
 
 def compile_disassemble_reference(pipeline, source_file):
     print("==============")
@@ -78,35 +78,36 @@ def compile_disassemble_reference(pipeline, source_file):
     pipeline.r2_decompile(executable_filename)
     print("Adding to reference dataset...")
     pipeline.add_source_to_dataset(source_file)
-    return executable_filename;
+    return executable_filename
 
-def create_new_pipeline(path):
-    model_name = "gpt-3.5-turbo"
-    # model_name = "gpt-4"
+def create_new_pipeline(path, model_name):
     model = OpenAIModel(os.environ.get("OPENAI_API_KEY"), model_name, 0)
     return Pipeline(model, path)
 
-
 if __name__ == '__main__':
-    # Check if any command-line arguments were provided
-    if len(sys.argv) > 2:
-        pipeline = create_new_pipeline(sys.argv[2])
-        # If the first argument is 'clean', run the clean function
-        if sys.argv[1] == 'clean':
-            pipeline.clean()
-        elif sys.argv[1] == 'prepare':
-            pipeline.clean()
-            pipeline.init_folders()
-            run_pipeline_prepare(pipeline)
-        elif sys.argv[1] == 'print':
-            pipeline.clean()
-            pipeline.init_folders()
-            run_pipeline_print(pipeline)
-        elif sys.argv[1] == 'evaluate':
-            pipeline.clean()
-            pipeline.init_folders()
-            run_pipeline_evaluate(pipeline)
-        else:
-            print(f'Error: Unknown argument {sys.argv[1]}')
+    parser = argparse.ArgumentParser(description='Run pipeline commands.')
+    parser.add_argument('-d', '--data-dir', type=str, default='data', help='Data directory')
+    parser.add_argument('-r', '--results', type=str, default='results.pkl', help='Results filename')
+    parser.add_argument('-m', '--model', type=str, default='gpt-3.5-turbo', help='Model name')
+    parser.add_argument('command', choices=['clean', 'prepare', 'print', 'evaluate'], help='Command to execute')
+
+    args = parser.parse_args()
+
+    pipeline = create_new_pipeline(args.data_dir, args.model)
+
+    if args.command == 'clean':
+        pipeline.clean()
+    elif args.command == 'prepare':
+        pipeline.clean()
+        pipeline.init_folders()
+        run_pipeline_prepare(pipeline)
+    elif args.command == 'print':
+        pipeline.clean()
+        pipeline.init_folders()
+        run_pipeline_print(pipeline)
+    elif args.command == 'evaluate':
+        pipeline.clean()
+        pipeline.init_folders()
+        run_pipeline_evaluate(pipeline, args.results)
     else:
-        print(f'Error: expected \'clean\', \'print\' or \'evaluate\' argument and data path')
+        print(f'Error: Unknown command {args.command}')
