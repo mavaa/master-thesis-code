@@ -17,6 +17,7 @@ class Pipeline:
         self.llm_predictions_file_path = os.path.join(data_path, "llm_predictions.txt")
         self.prediction_model = prediction_model
 
+    def init_folders(self):
         create_folder_if_not_exists(self.builds_path)
         create_folder_if_not_exists(self.disassemblies_path)
         create_folder_if_not_exists(self.r2d_path)

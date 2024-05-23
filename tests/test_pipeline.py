@@ -41,7 +41,10 @@ def setup_pipeline(tmp_path):
     copyfile(os.path.join("data/sources/", source_filename),
              os.path.join(sources_path, source_filename))
 
-    yield Pipeline(Mock_Model("testkey", "test-model", 0.5), data_path)
+    pipeline = Pipeline(Mock_Model("testkey", "test-model", 0.5), data_path)
+    pipeline.init_folders()
+
+    yield pipeline
 
 def test_get_sources(setup_pipeline):
     sources = setup_pipeline.get_sources()
