@@ -12,7 +12,10 @@ from unittest.mock import MagicMock
 executable_filename = "helloworld"
 source_filename = f"{executable_filename}.c"
 r2_decompile_filename = f"r2d_{executable_filename}.txt"
-mock_prediction = "Mocked prediction"
+mock_prediction = """```c
+Mocked prediction
+```"""
+mock_prediction_expected_result = "Mocked prediction"
 
 class Mock_Model:
     def __init__(self, api_key, model, temperature):
@@ -116,7 +119,7 @@ def test_generate_and_save_prediction(setup_pipeline):
     with open(setup_pipeline.llm_predictions_file_path, 'r') as file:
         prediction_file_content  = file.read()
 
-    assert prediction_file_content == mock_prediction + '\n'
+    assert prediction_file_content == mock_prediction_expected_result + '\n'
 
 @pytest.mark.parametrize("source,expected", [
     (["hey", "there", "you"], "hey there you"),

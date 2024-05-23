@@ -75,6 +75,13 @@ class Pipeline:
 
     def generate_and_save_prediction(self, executable):
         prediction = self.generate_prediction(executable).replace("```", "")
+
+        lines = prediction.split('\n')
+        if lines and lines[0].strip().lower() == "c":
+            lines = lines[1:]
+
+        prediction = "\n".join(lines)
+
         with open(self.llm_predictions_file_path, 'a') as file:
             file.write(self.put_code_on_single_line(prediction.split('\n')) + '\n')
 
