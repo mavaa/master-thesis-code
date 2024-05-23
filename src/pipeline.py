@@ -26,10 +26,13 @@ class Pipeline:
     def get_sources(self):
         return os.listdir(self.sources_path)
 
-    def compile(self, source, output):
+    def compile(self, source, output, strip=False):
         output_path = os.path.join(self.builds_path, output)
         source_path = os.path.join(self.sources_path, source)
         subprocess.run(['gcc', '-c', '-o', output_path, source_path], check=True)
+
+        if strip:
+            subprocess.run(["strip", output_path], check=True)
 
     def disassemble(self, executable):
         output_path = os.path.join(self.disassemblies_path, f'{executable}_d.txt')

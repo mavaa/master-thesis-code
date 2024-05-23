@@ -53,8 +53,9 @@ def test_get_sources(setup_pipeline):
     sources = setup_pipeline.get_sources()
     assert sources == [source_filename], "The sources array does not contain the expected file"
 
-def test_compile(setup_pipeline):
-    setup_pipeline.compile(source_filename, executable_filename)
+@pytest.mark.parametrize("stripped", [True, False])
+def test_compile(setup_pipeline, stripped):
+    setup_pipeline.compile(source_filename, executable_filename, stripped)
     executable_path = os.path.join(setup_pipeline.data_path, "builds", executable_filename)
 
     # Check if the executable exists
@@ -63,6 +64,10 @@ def test_compile(setup_pipeline):
     # Check if the file is an object file
     file_type = magic.from_file(executable_path)
     assert str_contains_word(file_type, 'ELF') and str_contains_word(file_type, 'relocatable'), f"File {executable_path} is not a valid object file. Detected type: {file_type}"
+
+    # Check if the compiled file was stripped according to parameter
+    was_stripped = is_stripped(file_type)
+    assert was_stripped == stripped, f"Strip parameter was not respected, expected {stripped}, but was {was_stripped}"
 
 def test_disassemble(setup_pipeline):
     setup_pipeline.compile(source_filename, executable_filename)
@@ -178,3 +183,6 @@ def test_clean_function(setup_pipeline):
 
 def str_contains_word(string, word):
     return re.search(r'\b' + word + r'\b', string) is not None
+
+def is_stripped(file_type):
+    return "not stripped" not in file_type and str_contains_word(file_type, "stripped")

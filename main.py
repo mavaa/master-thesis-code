@@ -6,13 +6,13 @@ from src.openaimodel import OpenAIModel
 import pickle
 from tabulate import tabulate
 
-def run_pipeline_prepare(pipeline):
+def run_pipeline_prepare(pipeline, args):
     for source_file in pipeline.get_sources():
-        compile_disassemble_reference(pipeline, source_file)
+        compile_disassemble_reference(pipeline, source_file, args.strip)
 
-def run_pipeline_print(pipeline):
+def run_pipeline_print(pipeline, args):
     for source_file in pipeline.get_sources():
-        executable_filename = compile_disassemble_reference(pipeline, source_file)
+        executable_filename = compile_disassemble_reference(pipeline, source_file, args.strip)
 
         print("Generating prediction...")
         prediction = pipeline.generate_prediction(executable_filename)
@@ -27,9 +27,9 @@ def run_pipeline_print(pipeline):
         input()
 
 # Run predictions and evaluate
-def run_pipeline_evaluate(pipeline, results_filename):
+def run_pipeline_evaluate(pipeline, args):
     for source_file in pipeline.get_sources():
-        executable_filename = compile_disassemble_reference(pipeline, source_file)
+        executable_filename = compile_disassemble_reference(pipeline, source_file, args.strip)
         print("Generating prediction...")
         pipeline.generate_and_save_prediction(executable_filename)
         print()
@@ -53,7 +53,7 @@ def run_pipeline_evaluate(pipeline, results_filename):
     }
 
     # Save results to a file
-    with open(os.path.join(pipeline.data_path, results_filename), 'wb') as f:
+    with open(os.path.join(pipeline.data_path, args.results), 'wb') as f:
         pickle.dump(results, f)
 
     # Print results in a table format for LaTeX
@@ -65,13 +65,13 @@ def run_pipeline_evaluate(pipeline, results_filename):
     print("\nLaTeX Table:")
     print(tabulate(table_data, headers, tablefmt="latex"))
 
-def compile_disassemble_reference(pipeline, source_file):
+def compile_disassemble_reference(pipeline, source_file, strip):
     print("==============")
     print(f"File: {source_file}")
     print("==============")
     executable_filename = os.path.splitext(source_file)[0]
     print("Compiling...")
-    pipeline.compile(source_file, executable_filename)
+    pipeline.compile(source_file, executable_filename, strip)
     print("Creating disassembly...")
     pipeline.disassemble(executable_filename)
     print("Creating r2 decompiled files")
@@ -89,6 +89,7 @@ if __name__ == '__main__':
     parser.add_argument('-d', '--data-dir', type=str, default='data', help='Data directory')
     parser.add_argument('-r', '--results', type=str, default='results.pkl', help='Results filename')
     parser.add_argument('-m', '--model', type=str, default='gpt-3.5-turbo', help='Model name')
+    parser.add_argument('-s', '--strip', action='store_true', help='Strip the binary during compilation')
     parser.add_argument('command', choices=['clean', 'prepare', 'print', 'evaluate'], help='Command to execute')
 
     args = parser.parse_args()
@@ -100,14 +101,14 @@ if __name__ == '__main__':
     elif args.command == 'prepare':
         pipeline.clean()
         pipeline.init_folders()
-        run_pipeline_prepare(pipeline)
+        run_pipeline_prepare(pipeline, args)
     elif args.command == 'print':
         pipeline.clean()
         pipeline.init_folders()
-        run_pipeline_print(pipeline)
+        run_pipeline_print(pipeline, args)
     elif args.command == 'evaluate':
         pipeline.clean()
         pipeline.init_folders()
-        run_pipeline_evaluate(pipeline, args.results)
+        run_pipeline_evaluate(pipeline, args)
     else:
         print(f'Error: Unknown command {args.command}')
