@@ -1,0 +1,1 @@
+float func(float f) { int i = (int)f; return f - i; }
