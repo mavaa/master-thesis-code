@@ -24,7 +24,7 @@ class Pipeline:
         create_folder_if_not_exists(self.llmd_path)
 
     def get_sources(self):
-        return os.listdir(self.sources_path)
+        return sorted(os.listdir(self.sources_path))
 
     def compile(self, source, output, strip=False):
         output_path = os.path.join(self.builds_path, output)
