@@ -11,3 +11,4 @@ data/r2_predictions.txt
 .coverage
 .env
 data_decompile_eval
+*.pkl
