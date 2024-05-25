@@ -8,11 +8,11 @@ from tabulate import tabulate
 
 def run_pipeline_prepare(pipeline, args):
     for source_file in pipeline.get_sources():
-        compile_disassemble_reference(pipeline, source_file, args.strip)
+        compile_disassemble_reference(pipeline, source_file, args.strip, args.objdump)
 
 def run_pipeline_print(pipeline, args):
     for source_file in pipeline.get_sources():
-        executable_filename = compile_disassemble_reference(pipeline, source_file, args.strip)
+        executable_filename = compile_disassemble_reference(pipeline, source_file, args.strip, args.objdump)
 
         print("Generating prediction...")
         prediction = pipeline.generate_prediction(executable_filename)
@@ -29,7 +29,7 @@ def run_pipeline_print(pipeline, args):
 # Run predictions and evaluate
 def run_pipeline_evaluate(pipeline, args):
     for source_file in pipeline.get_sources():
-        executable_filename = compile_disassemble_reference(pipeline, source_file, args.strip)
+        executable_filename = compile_disassemble_reference(pipeline, source_file, args.strip, args.objdump)
         print("Generating prediction...")
         pipeline.generate_and_save_prediction(executable_filename)
         print()
@@ -65,7 +65,7 @@ def run_pipeline_evaluate(pipeline, args):
     print("\nLaTeX Table:")
     print(tabulate(table_data, headers, tablefmt="latex"))
 
-def compile_disassemble_reference(pipeline, source_file, strip):
+def compile_disassemble_reference(pipeline, source_file, strip, objdump):
     print("==============")
     print(f"File: {source_file}")
     print("==============")
@@ -73,7 +73,10 @@ def compile_disassemble_reference(pipeline, source_file, strip):
     print("Compiling...")
     pipeline.compile(source_file, executable_filename, strip)
     print("Creating disassembly...")
-    pipeline.disassemble(executable_filename)
+    if objdump:
+        pipeline.disassemble_objdump(executable_filename)
+    else:
+        pipeline.disassemble(executable_filename)
     print("Creating r2 decompiled files")
     pipeline.r2_decompile(executable_filename)
     print("Adding to reference dataset...")
@@ -90,6 +93,7 @@ if __name__ == '__main__':
     parser.add_argument('-r', '--results', type=str, default='results.pkl', help='Results filename')
     parser.add_argument('-m', '--model', type=str, default='gpt-3.5-turbo', help='Model name')
     parser.add_argument('-s', '--strip', action='store_true', help='Strip the binary during compilation')
+    parser.add_argument('-o', '--objdump', action='store_true', help='Use objdump instead of r2 for disassembly')
     parser.add_argument('command', choices=['clean', 'prepare', 'print', 'evaluate'], help='Command to execute')
 
     args = parser.parse_args()

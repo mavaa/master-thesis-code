@@ -36,13 +36,13 @@ class Pipeline:
 
     def disassemble(self, executable):
         output_path = os.path.join(self.disassemblies_path, f'{executable}_d.txt')
+
+        self.r2_run('pd', executable, output_path)
+
+    def disassemble_objdump(self, executable):
+        output_path = os.path.join(self.disassemblies_path, f'{executable}_d.txt')
         executable_path = os.path.join(self.builds_path, executable)
 
-        # Note to self: Running `radare2 -qc pd @ main main` doesn't work,
-        # since only 'pd' will be passed to radare2 as command.
-        # Have to use `radare2 -qc "pd @ main" main`.
-        # TODO: Test this with 'pd @ main', 'pd @.main' and just 'pd'
-        # TODO: Should look into the warnings that are supressed by the DEVNULL stderr
         subprocess.run(["objdump", "-d", executable_path],
                        stdout=open(output_path, 'w'), check=True)
 
