@@ -1,7 +1,9 @@
 import sys
 import os
 import argparse
+import subprocess
 from src.pipeline import Pipeline
+from src.r2runner import R2Runner
 from src.openaimodel import OpenAIModel
 import pickle
 from tabulate import tabulate
@@ -85,7 +87,8 @@ def compile_disassemble_reference(pipeline, source_file, strip, objdump):
 
 def create_new_pipeline(path, model_name):
     model = OpenAIModel(os.environ.get("OPENAI_API_KEY"), model_name, 0)
-    return Pipeline(model, path)
+    r2_runner = R2Runner(subprocess)
+    return Pipeline(model, r2_runner, path)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Run pipeline commands.')

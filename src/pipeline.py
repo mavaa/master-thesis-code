@@ -5,8 +5,11 @@ from codebleu import calc_codebleu
 from .util import create_folder_if_not_exists
 
 class Pipeline:
-    def __init__(self, prediction_model, data_path="data/builds"):
+    def __init__(self, prediction_model, r2_runner, data_path="data"):
+        self.prediction_model = prediction_model
+        self.r2_runner = r2_runner
         self.data_path = data_path
+
         self.sources_path = os.path.join(data_path, "sources")
         self.builds_path = os.path.join(data_path, "builds")
         self.disassemblies_path = os.path.join(data_path, "disassemblies")
@@ -15,7 +18,6 @@ class Pipeline:
         self.references_file_path = os.path.join(data_path, "references.txt")
         self.r2_predictions_file_path = os.path.join(data_path, "r2_predictions.txt")
         self.llm_predictions_file_path = os.path.join(data_path, "llm_predictions.txt")
-        self.prediction_model = prediction_model
 
     def init_folders(self):
         create_folder_if_not_exists(self.builds_path)
@@ -35,9 +37,8 @@ class Pipeline:
             subprocess.run(["strip", output_path], check=True)
 
     def disassemble(self, executable):
-        output_path = os.path.join(self.disassemblies_path, f'{executable}_d.txt')
-
-        self.r2_run('pd', executable, output_path)
+        self.r2_run('pd', executable,
+            os.path.join(self.disassemblies_path, f'{executable}_d.txt'))
 
     def disassemble_objdump(self, executable):
         output_path = os.path.join(self.disassemblies_path, f'{executable}_d.txt')
@@ -48,7 +49,7 @@ class Pipeline:
 
     def r2_decompile(self, executable):
         output_path = os.path.join(self.r2d_path, f'{executable}.txt')
-        self.r2_run('aaa;s main;pdg', executable, output_path)
+        self.r2_run('aaa;pdg', executable, output_path)
 
         with open(output_path, 'r') as output_file:
             source_code = self.put_code_on_single_line(output_file)
@@ -57,10 +58,7 @@ class Pipeline:
 
     def r2_run(self, command, executable, output_path):
         executable_path = os.path.join(self.builds_path, executable)
-
-        subprocess.run(
-                ['radare2', '-qc', command, executable_path],
-                stdout=open(output_path, 'w'), check=True, stderr=subprocess.DEVNULL)
+        self.r2_runner.run( command, executable_path, output_path)
 
     def add_source_to_dataset(self, source):
         source_path = os.path.join(self.sources_path, source)

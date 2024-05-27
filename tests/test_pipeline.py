@@ -2,12 +2,14 @@ import pytest
 import os
 import magic
 import re
+import subprocess
 from src.pipeline import Pipeline
+from src.r2runner import R2Runner
 from src.util import create_folder_if_not_exists
 from shutil import copyfile
 from types import SimpleNamespace
 from pathlib import Path
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, mock_open, patch
 
 executable_filename = "helloworld"
 source_filename = f"{executable_filename}.c"
@@ -32,7 +34,10 @@ class Mock_Model:
             ]
         )
 
-def setup_pipeline(tmp_path):
+def setup_pipeline(tmp_path, r2_runner):
+    if r2_runner is None:
+        r2_runner = R2Runner(subprocess)
+
     # Setup data folders and copy main.c
     data_path = os.path.join(tmp_path, "data")
     create_folder_if_not_exists(data_path)
@@ -43,15 +48,18 @@ def setup_pipeline(tmp_path):
     copyfile(os.path.join("data/sources/", source_filename),
              os.path.join(sources_path, source_filename))
 
-    pipeline = Pipeline(Mock_Model("testkey", "test-model", 0.5), data_path)
+    pipeline = Pipeline(
+            Mock_Model("testkey", "test-model", 0.5),
+            r2_runner,
+            data_path)
     pipeline.init_folders()
 
     return pipeline
 
 @pytest.fixture
 def pipeline_factory(tmp_path):
-    def create_pipeline():
-        return setup_pipeline(tmp_path)
+    def create_pipeline(r2_runner=None):
+        return setup_pipeline(tmp_path, r2_runner)
     return create_pipeline
 
 def test_get_sources(pipeline_factory):
@@ -92,12 +100,16 @@ def test_disassemble_with_real_r2(pipeline_factory):
     assert os.path.exists(disassembly_file), f"Disassembly file ({disassembly_file}) does not exist after pipeline execution."
 
 def test_disassemble_calls_r2_func(pipeline_factory):
-    pipeline = pipeline_factory()
-    pipeline.r2_run = MagicMock()
+    mock_r2_runner = MagicMock()
+    pipeline = pipeline_factory(mock_r2_runner)
+    output_path = os.path.join(pipeline.disassemblies_path, f'{executable_filename}_d.txt')
 
     pipeline.disassemble(executable_filename)
 
-    pipeline.r2_run.assert_called_once()
+    mock_r2_runner.run.assert_called_once_with(
+            'pd',
+            os.path.join(pipeline.builds_path, executable_filename),
+            output_path)
 
 def test_r2_run(pipeline_factory):
     pipeline = pipeline_factory()
@@ -107,13 +119,26 @@ def test_r2_run(pipeline_factory):
 
     assert os.path.exists(r2_out_path), f"r2 output file ({r2_out_path}) does not exist after r2 execution."
 
-def test_decompile_r2(pipeline_factory):
+def test_r2_decompile(pipeline_factory):
     pipeline = pipeline_factory()
     pipeline.compile(source_filename, executable_filename)
     pipeline.r2_decompile(executable_filename)
 
     decompiled_file = os.path.join(pipeline.r2d_path, f'{executable_filename}.txt')
     assert os.path.exists(decompiled_file), f"Decompiled file ({decompiled_file}) does not exist."
+
+def test_r2_decompile_calls_r2_func(pipeline_factory):
+    mock_r2_runner = MagicMock()
+    pipeline = pipeline_factory(mock_r2_runner)
+    output_path = os.path.join(pipeline.r2d_path, f'{executable_filename}.txt')
+
+    with patch("builtins.open", mock_open()) as mock_file:
+        pipeline.r2_decompile(executable_filename)
+
+    mock_r2_runner.run.assert_called_once_with(
+            'aaa;pdg',
+            os.path.join(pipeline.builds_path, executable_filename),
+            output_path)
 
 def test_add_source_to_dataset(pipeline_factory):
     pipeline = pipeline_factory()
