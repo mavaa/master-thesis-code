@@ -32,7 +32,6 @@ class Mock_Model:
             ]
         )
 
-@pytest.fixture
 def setup_pipeline(tmp_path):
     # Setup data folders and copy main.c
     data_path = os.path.join(tmp_path, "data")
@@ -47,16 +46,23 @@ def setup_pipeline(tmp_path):
     pipeline = Pipeline(Mock_Model("testkey", "test-model", 0.5), data_path)
     pipeline.init_folders()
 
-    yield pipeline
+    return pipeline
 
-def test_get_sources(setup_pipeline):
-    sources = setup_pipeline.get_sources()
+@pytest.fixture
+def pipeline_factory(tmp_path):
+    def create_pipeline():
+        return setup_pipeline(tmp_path)
+    return create_pipeline
+
+def test_get_sources(pipeline_factory):
+    sources = pipeline_factory().get_sources()
     assert sources == [source_filename], "The sources array does not contain the expected file"
 
 @pytest.mark.parametrize("stripped", [True, False])
-def test_compile(setup_pipeline, stripped):
-    setup_pipeline.compile(source_filename, executable_filename, stripped)
-    executable_path = os.path.join(setup_pipeline.data_path, "builds", executable_filename)
+def test_compile(pipeline_factory, stripped):
+    pipeline = pipeline_factory()
+    pipeline.compile(source_filename, executable_filename, stripped)
+    executable_path = os.path.join(pipeline.data_path, "builds", executable_filename)
 
     # Check if the executable exists
     assert os.path.exists(executable_path), f"Executable {executable_path} was not created"
@@ -69,59 +75,74 @@ def test_compile(setup_pipeline, stripped):
     was_stripped = is_stripped(file_type)
     assert was_stripped == stripped, f"Strip parameter was not respected, expected {stripped}, but was {was_stripped}"
 
-def test_disassemble(setup_pipeline):
-    setup_pipeline.compile(source_filename, executable_filename)
-    setup_pipeline.disassemble(executable_filename)
+def test_disassemble(pipeline_factory):
+    pipeline = pipeline_factory()
+    pipeline.compile(source_filename, executable_filename)
+    pipeline.disassemble(executable_filename)
 
-    disassembly_file = os.path.join(setup_pipeline.disassemblies_path, f'{executable_filename}_d.txt')
+    disassembly_file = os.path.join(pipeline.disassemblies_path, f'{executable_filename}_d.txt')
     assert os.path.exists(disassembly_file), f"Disassembly file ({disassembly_file}) does not exist after pipeline execution."
 
-def test_disassemble_calls_r2_func(setup_pipeline):
-    setup_pipeline.r2_run = MagicMock()
+def test_disassemble_with_real_r2(pipeline_factory):
+    pipeline = pipeline_factory()
+    pipeline.compile(source_filename, executable_filename)
+    pipeline.disassemble(executable_filename)
 
-    setup_pipeline.disassemble(executable_filename)
+    disassembly_file = os.path.join(pipeline.disassemblies_path, f'{executable_filename}_d.txt')
+    assert os.path.exists(disassembly_file), f"Disassembly file ({disassembly_file}) does not exist after pipeline execution."
 
-    setup_pipeline.r2_run.assert_called_once()
+def test_disassemble_calls_r2_func(pipeline_factory):
+    pipeline = pipeline_factory()
+    pipeline.r2_run = MagicMock()
 
-def test_r2_run(setup_pipeline):
-    r2_out_path = os.path.join(setup_pipeline.data_path, "r2_out.txt")
-    setup_pipeline.compile(source_filename, executable_filename)
-    setup_pipeline.r2_run('pd', executable_filename, r2_out_path)
+    pipeline.disassemble(executable_filename)
+
+    pipeline.r2_run.assert_called_once()
+
+def test_r2_run(pipeline_factory):
+    pipeline = pipeline_factory()
+    r2_out_path = os.path.join(pipeline.data_path, "r2_out.txt")
+    pipeline.compile(source_filename, executable_filename)
+    pipeline.r2_run('pd', executable_filename, r2_out_path)
 
     assert os.path.exists(r2_out_path), f"r2 output file ({r2_out_path}) does not exist after r2 execution."
 
-def test_decompile_r2(setup_pipeline):
-    setup_pipeline.compile(source_filename, executable_filename)
-    setup_pipeline.r2_decompile(executable_filename)
+def test_decompile_r2(pipeline_factory):
+    pipeline = pipeline_factory()
+    pipeline.compile(source_filename, executable_filename)
+    pipeline.r2_decompile(executable_filename)
 
-    decompiled_file = os.path.join(setup_pipeline.r2d_path, f'{executable_filename}.txt')
+    decompiled_file = os.path.join(pipeline.r2d_path, f'{executable_filename}.txt')
     assert os.path.exists(decompiled_file), f"Decompiled file ({decompiled_file}) does not exist."
 
-def test_add_source_to_dataset(setup_pipeline):
-    setup_pipeline.add_source_to_dataset(source_filename)
+def test_add_source_to_dataset(pipeline_factory):
+    pipeline = pipeline_factory()
+    pipeline.add_source_to_dataset(source_filename)
 
-    assert os.path.exists(setup_pipeline.references_file_path), "Reference file does not exist after pipeline execution."
+    assert os.path.exists(pipeline.references_file_path), "Reference file does not exist after pipeline execution."
 
-    with open(setup_pipeline.references_file_path, 'r') as file:
+    with open(pipeline.references_file_path, 'r') as file:
         reference_file_content  = file.read()
 
     assert reference_file_content == '#include <stdio.h> int print_hello() { printf("Hello, World!\\n"); return 0; }\n'
 
-def test_generate_prediction(setup_pipeline):
-    setup_pipeline.compile(source_filename, executable_filename)
-    setup_pipeline.disassemble(executable_filename)
-    prediction = setup_pipeline.generate_prediction(executable_filename)
+def test_generate_prediction(pipeline_factory):
+    pipeline = pipeline_factory()
+    pipeline.compile(source_filename, executable_filename)
+    pipeline.disassemble(executable_filename)
+    prediction = pipeline.generate_prediction(executable_filename)
 
     assert prediction == mock_prediction, f'Unexpected prediction: {prediction}'
 
-def test_generate_and_save_prediction(setup_pipeline):
-    setup_pipeline.compile(source_filename, executable_filename)
-    setup_pipeline.disassemble(executable_filename)
-    setup_pipeline.generate_and_save_prediction(executable_filename)
+def test_generate_and_save_prediction(pipeline_factory):
+    pipeline = pipeline_factory()
+    pipeline.compile(source_filename, executable_filename)
+    pipeline.disassemble(executable_filename)
+    pipeline.generate_and_save_prediction(executable_filename)
 
-    assert os.path.exists(setup_pipeline.llm_predictions_file_path), "Predictions file does not exist."
+    assert os.path.exists(pipeline.llm_predictions_file_path), "Predictions file does not exist."
 
-    with open(setup_pipeline.llm_predictions_file_path, 'r') as file:
+    with open(pipeline.llm_predictions_file_path, 'r') as file:
         prediction_file_content  = file.read()
 
     assert prediction_file_content == mock_prediction_expected_result + '\n'
@@ -131,16 +152,18 @@ def test_generate_and_save_prediction(setup_pipeline):
     (["quick", "brown", "", "fox"], "quick brown fox"),
     (["hey", "  you", "there  "], "hey you there")
 ])
-def test_put_code_on_single_line(source, expected, setup_pipeline):
-    result = setup_pipeline.put_code_on_single_line(source)
+def test_put_code_on_single_line(pipeline_factory, source, expected):
+    pipeline = pipeline_factory()
+    result = pipeline.put_code_on_single_line(source)
     assert result == expected
 
-def test_evaluate_llm(setup_pipeline):
-    setup_pipeline.compile(source_filename, executable_filename)
-    setup_pipeline.disassemble(executable_filename)
-    setup_pipeline.generate_and_save_prediction(executable_filename)
-    setup_pipeline.add_source_to_dataset(source_filename)
-    result = setup_pipeline.evaluate_llm()
+def test_evaluate_llm(pipeline_factory):
+    pipeline = pipeline_factory()
+    pipeline.compile(source_filename, executable_filename)
+    pipeline.disassemble(executable_filename)
+    pipeline.generate_and_save_prediction(executable_filename)
+    pipeline.add_source_to_dataset(source_filename)
+    result = pipeline.evaluate_llm()
 
     assert isinstance(result['codebleu'], (int, float)), "Value is not a number"
     assert isinstance(result['ngram_match_score'], (int, float)), "Value is not a number"
@@ -148,11 +171,12 @@ def test_evaluate_llm(setup_pipeline):
     assert isinstance(result['syntax_match_score'], (int, float)), "Value is not a number"
     assert isinstance(result['dataflow_match_score'], (int, float)), "Value is not a number"
 
-def test_evaluate_r2(setup_pipeline):
-    setup_pipeline.compile(source_filename, executable_filename)
-    setup_pipeline.r2_decompile(executable_filename)
-    setup_pipeline.add_source_to_dataset(source_filename)
-    result = setup_pipeline.evaluate_r2()
+def test_evaluate_r2(pipeline_factory):
+    pipeline = pipeline_factory()
+    pipeline.compile(source_filename, executable_filename)
+    pipeline.r2_decompile(executable_filename)
+    pipeline.add_source_to_dataset(source_filename)
+    result = pipeline.evaluate_r2()
 
     assert isinstance(result['codebleu'], (int, float)), "Value is not a number"
     assert isinstance(result['ngram_match_score'], (int, float)), "Value is not a number"
@@ -160,26 +184,27 @@ def test_evaluate_r2(setup_pipeline):
     assert isinstance(result['syntax_match_score'], (int, float)), "Value is not a number"
     assert isinstance(result['dataflow_match_score'], (int, float)), "Value is not a number"
 
-def test_clean_function(setup_pipeline):
-    Path(setup_pipeline.references_file_path).touch()
-    Path(setup_pipeline.llm_predictions_file_path).touch()
-    Path(setup_pipeline.r2_predictions_file_path).touch()
-    assert os.path.exists(setup_pipeline.builds_path), "Build directory does not exist before clean function execution."
-    assert os.path.exists(setup_pipeline.disassemblies_path), "Disassemblies directory does not exist before clean function execution."
-    assert os.path.exists(setup_pipeline.references_file_path), "Reference file does not exist before clean function execution."
-    assert os.path.exists(setup_pipeline.llm_predictions_file_path), "LLM predictions file does not exist before clean function execution."
-    assert os.path.exists(setup_pipeline.r2_predictions_file_path), "R2 predictions file does not exist before clean function execution."
-    assert os.path.exists(setup_pipeline.r2d_path), "r2 decompilation directory does not exist before clean function execution."
-    assert os.path.exists(setup_pipeline.llmd_path), "llm decompilation directory does not exist before clean function execution."
+def test_clean_function(pipeline_factory):
+    pipeline = pipeline_factory()
+    Path(pipeline.references_file_path).touch()
+    Path(pipeline.llm_predictions_file_path).touch()
+    Path(pipeline.r2_predictions_file_path).touch()
+    assert os.path.exists(pipeline.builds_path), "Build directory does not exist before clean function execution."
+    assert os.path.exists(pipeline.disassemblies_path), "Disassemblies directory does not exist before clean function execution."
+    assert os.path.exists(pipeline.references_file_path), "Reference file does not exist before clean function execution."
+    assert os.path.exists(pipeline.llm_predictions_file_path), "LLM predictions file does not exist before clean function execution."
+    assert os.path.exists(pipeline.r2_predictions_file_path), "R2 predictions file does not exist before clean function execution."
+    assert os.path.exists(pipeline.r2d_path), "r2 decompilation directory does not exist before clean function execution."
+    assert os.path.exists(pipeline.llmd_path), "llm decompilation directory does not exist before clean function execution."
 
-    setup_pipeline.clean()
-    assert not os.path.exists(setup_pipeline.builds_path), "Build directory exists after clean function execution."
-    assert not os.path.exists(setup_pipeline.disassemblies_path), "Disassemblies directory exists after clean function execution."
-    assert not os.path.exists(setup_pipeline.references_file_path), "Reference file exists after clean function execution."
-    assert not os.path.exists(setup_pipeline.llm_predictions_file_path), "Predictions file exists after clean function execution."
-    assert not os.path.exists(setup_pipeline.r2_predictions_file_path), "R2 predictions file exists after clean function execution."
-    assert not os.path.exists(setup_pipeline.r2d_path), "r2 decompilation directory exists after clean function execution."
-    assert not os.path.exists(setup_pipeline.llmd_path), "llm decompilation directory exists after clean function execution."
+    pipeline.clean()
+    assert not os.path.exists(pipeline.builds_path), "Build directory exists after clean function execution."
+    assert not os.path.exists(pipeline.disassemblies_path), "Disassemblies directory exists after clean function execution."
+    assert not os.path.exists(pipeline.references_file_path), "Reference file exists after clean function execution."
+    assert not os.path.exists(pipeline.llm_predictions_file_path), "Predictions file exists after clean function execution."
+    assert not os.path.exists(pipeline.r2_predictions_file_path), "R2 predictions file exists after clean function execution."
+    assert not os.path.exists(pipeline.r2d_path), "r2 decompilation directory exists after clean function execution."
+    assert not os.path.exists(pipeline.llmd_path), "llm decompilation directory exists after clean function execution."
 
 def str_contains_word(string, word):
     return re.search(r'\b' + word + r'\b', string) is not None
