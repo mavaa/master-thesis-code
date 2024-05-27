@@ -22,6 +22,20 @@ def test_r2_run():
             stderr=error,
             check=True)
 
+def test_r2_run_no_sdterr():
+    mock_subprocess = MagicMock()
+    r2_runner = R2Runner(mock_subprocess)
+
+    output = MagicMock()
+
+    r2_runner.run(command, test_sample_path, output)
+
+    mock_subprocess.run.assert_called_once_with(
+            ['radare2', '-qc', command, test_sample_path],
+            stdout=output,
+            stderr=mock_subprocess.DEVNULL,
+            check=True)
+
 def test_r2_run_custom():
     mock_subprocess = MagicMock()
     custom_path = "/usr/bin/r2"

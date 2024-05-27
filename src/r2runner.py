@@ -8,8 +8,8 @@ class R2Runner:
     def run(self, command, executable_path, output, error=None):
         pass
 
-        #if error is None:
-            #error = self.subprocess.DEVNULL
+        if error is None:
+            error = self.subprocess.DEVNULL
 
         self.subprocess.run([self.r2_path, f'-{self.r2_default_flags}', command, executable_path],
                 stdout=output, stderr=error, check=True)
