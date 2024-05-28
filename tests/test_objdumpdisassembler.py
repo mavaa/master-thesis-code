@@ -18,3 +18,11 @@ def test_disassemble_calls_subprocess():
                 ["objdump", "-d", test_sample_path],
                            stdout=mock_file(), check=True)
 
+def test_disassemble_integration(tmp_path):
+    output_path = os.path.join(tmp_path, 'objdump_out.txt')
+
+    disassembler = ObjdumpDisassembler(subprocess)
+
+    disassembler.disassemble(test_sample_path, output_path)
+
+    assert os.path.exists(output_path), "objdump output file not created"

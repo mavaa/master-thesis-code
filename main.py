@@ -4,17 +4,19 @@ import argparse
 import subprocess
 from src.pipeline import Pipeline
 from src.r2runner import R2Runner
+from src.disassembler.objdumpdisassembler import ObjdumpDisassembler
+from src.disassembler.r2disassembler import R2Disassembler
 from src.openaimodel import OpenAIModel
 import pickle
 from tabulate import tabulate
 
 def run_pipeline_prepare(pipeline, args):
     for source_file in pipeline.get_sources():
-        compile_disassemble_reference(pipeline, source_file, args.strip, args.objdump)
+        compile_disassemble_reference(pipeline, source_file, args.strip)
 
 def run_pipeline_print(pipeline, args):
     for source_file in pipeline.get_sources():
-        executable_filename = compile_disassemble_reference(pipeline, source_file, args.strip, args.objdump)
+        executable_filename = compile_disassemble_reference(pipeline, source_file, args.strip)
 
         print("Generating prediction...")
         prediction = pipeline.generate_prediction(executable_filename)
@@ -31,7 +33,7 @@ def run_pipeline_print(pipeline, args):
 # Run predictions and evaluate
 def run_pipeline_evaluate(pipeline, args):
     for source_file in pipeline.get_sources():
-        executable_filename = compile_disassemble_reference(pipeline, source_file, args.strip, args.objdump)
+        executable_filename = compile_disassemble_reference(pipeline, source_file, args.strip)
         print("Generating prediction...")
         pipeline.generate_and_save_prediction(executable_filename)
         print()
@@ -67,7 +69,7 @@ def run_pipeline_evaluate(pipeline, args):
     print("\nLaTeX Table:")
     print(tabulate(table_data, headers, tablefmt="latex"))
 
-def compile_disassemble_reference(pipeline, source_file, strip, objdump):
+def compile_disassemble_reference(pipeline, source_file, strip):
     print("==============")
     print(f"File: {source_file}")
     print("==============")
@@ -75,20 +77,21 @@ def compile_disassemble_reference(pipeline, source_file, strip, objdump):
     print("Compiling...")
     pipeline.compile(source_file, executable_filename, strip)
     print("Creating disassembly...")
-    if objdump:
-        pipeline.disassemble_objdump(executable_filename)
-    else:
-        pipeline.disassemble(executable_filename)
+    pipeline.disassemble(executable_filename)
     print("Creating r2 decompiled files")
     pipeline.r2_decompile(executable_filename)
     print("Adding to reference dataset...")
     pipeline.add_source_to_dataset(source_file)
     return executable_filename
 
-def create_new_pipeline(path, model_name):
+def create_new_pipeline(path, model_name, disassembler):
     model = OpenAIModel(os.environ.get("OPENAI_API_KEY"), model_name, 0)
     r2_runner = R2Runner(subprocess)
-    return Pipeline(model, r2_runner, path)
+    return Pipeline(
+            prediction_model=model,
+            r2_runner=r2_runner,
+            disassembler=disassembler,
+            data_path=path)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Run pipeline commands.')
@@ -96,12 +99,23 @@ if __name__ == '__main__':
     parser.add_argument('-r', '--results', type=str, default='results.pkl', help='Results filename')
     parser.add_argument('-m', '--model', type=str, default='gpt-3.5-turbo', help='Model name')
     parser.add_argument('-s', '--strip', action='store_true', help='Strip the binary during compilation')
-    parser.add_argument('-o', '--objdump', action='store_true', help='Use objdump instead of r2 for disassembly')
+    parser.add_argument('-x', '--disassembler', choices=['objdump', 'r2'], default='r2', help='Disassembler to run')
     parser.add_argument('command', choices=['clean', 'prepare', 'print', 'evaluate'], help='Command to execute')
 
     args = parser.parse_args()
 
-    pipeline = create_new_pipeline(args.data_dir, args.model)
+    disassembler = None
+
+    if args.disassembler == 'objdump':
+        disassembler = ObjdumpDisassembler(subprocess)
+    elif args.disassembler == 'r2':
+        disassembler = R2Disassembler(R2Runner(subprocess))
+    else:
+        print(f'Error: Unknown disassembler {args.disassembler}')
+        sys.exit(1)
+
+
+    pipeline = create_new_pipeline(args.data_dir, args.model, disassembler)
 
     if args.command == 'clean':
         pipeline.clean()

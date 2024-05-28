@@ -5,6 +5,7 @@ import re
 import subprocess
 from src.pipeline import Pipeline
 from src.r2runner import R2Runner
+from src.disassembler.objdumpdisassembler import ObjdumpDisassembler
 from src.util import create_folder_if_not_exists
 from shutil import copyfile
 from types import SimpleNamespace
@@ -34,9 +35,12 @@ class Mock_Model:
             ]
         )
 
-def setup_pipeline(tmp_path, r2_runner):
+def setup_pipeline(tmp_path, r2_runner, disassembler):
     if r2_runner is None:
         r2_runner = R2Runner(subprocess)
+
+    if disassembler is None:
+        disassembler = ObjdumpDisassembler(subprocess)
 
     # Setup data folders and copy main.c
     data_path = os.path.join(tmp_path, "data")
@@ -49,17 +53,18 @@ def setup_pipeline(tmp_path, r2_runner):
              os.path.join(sources_path, source_filename))
 
     pipeline = Pipeline(
-            Mock_Model("testkey", "test-model", 0.5),
-            r2_runner,
-            data_path)
+            prediction_model=Mock_Model("testkey", "test-model", 0.5),
+            r2_runner=r2_runner,
+            disassembler=disassembler,
+            data_path=data_path)
     pipeline.init_folders()
 
     return pipeline
 
 @pytest.fixture
 def pipeline_factory(tmp_path):
-    def create_pipeline(r2_runner=None):
-        return setup_pipeline(tmp_path, r2_runner)
+    def create_pipeline(r2_runner=None, disassembler=None):
+        return setup_pipeline(tmp_path, r2_runner, disassembler)
     return create_pipeline
 
 def test_get_sources(pipeline_factory):
@@ -83,31 +88,14 @@ def test_compile(pipeline_factory, stripped):
     was_stripped = is_stripped(file_type)
     assert was_stripped == stripped, f"Strip parameter was not respected, expected {stripped}, but was {was_stripped}"
 
-def test_disassemble(pipeline_factory):
-    pipeline = pipeline_factory()
-    pipeline.compile(source_filename, executable_filename)
-    pipeline.disassemble(executable_filename)
-
-    disassembly_file = os.path.join(pipeline.disassemblies_path, f'{executable_filename}_d.txt')
-    assert os.path.exists(disassembly_file), f"Disassembly file ({disassembly_file}) does not exist after pipeline execution."
-
-def test_disassemble_with_real_r2(pipeline_factory):
-    pipeline = pipeline_factory()
-    pipeline.compile(source_filename, executable_filename)
-    pipeline.disassemble(executable_filename)
-
-    disassembly_file = os.path.join(pipeline.disassemblies_path, f'{executable_filename}_d.txt')
-    assert os.path.exists(disassembly_file), f"Disassembly file ({disassembly_file}) does not exist after pipeline execution."
-
-def test_disassemble_calls_r2_func(pipeline_factory):
-    mock_r2_runner = MagicMock()
-    pipeline = pipeline_factory(mock_r2_runner)
+def test_disassemble_calls_disassembler(pipeline_factory):
+    mock_disassembler = MagicMock()
+    pipeline = pipeline_factory(disassembler=mock_disassembler)
     output_path = os.path.join(pipeline.disassemblies_path, f'{executable_filename}_d.txt')
 
     pipeline.disassemble(executable_filename)
 
-    mock_r2_runner.run.assert_called_once_with(
-            'pd',
+    mock_disassembler.disassemble.assert_called_once_with(
             os.path.join(pipeline.builds_path, executable_filename),
             output_path)
 

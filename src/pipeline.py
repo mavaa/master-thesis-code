@@ -5,9 +5,10 @@ from codebleu import calc_codebleu
 from .util import create_folder_if_not_exists
 
 class Pipeline:
-    def __init__(self, prediction_model, r2_runner, data_path="data"):
+    def __init__(self, prediction_model, r2_runner, disassembler, data_path="data"):
         self.prediction_model = prediction_model
         self.r2_runner = r2_runner
+        self.disassembler = disassembler
         self.data_path = data_path
 
         self.sources_path = os.path.join(data_path, "sources")
@@ -37,15 +38,9 @@ class Pipeline:
             subprocess.run(["strip", output_path], check=True)
 
     def disassemble(self, executable):
-        self.r2_run('pd', executable,
+        self.disassembler.disassemble(
+            os.path.join(self.builds_path, executable),
             os.path.join(self.disassemblies_path, f'{executable}_d.txt'))
-
-    def disassemble_objdump(self, executable):
-        output_path = os.path.join(self.disassemblies_path, f'{executable}_d.txt')
-        executable_path = os.path.join(self.builds_path, executable)
-
-        subprocess.run(["objdump", "-d", executable_path],
-                       stdout=open(output_path, 'w'), check=True)
 
     def r2_decompile(self, executable):
         output_path = os.path.join(self.r2d_path, f'{executable}.txt')
