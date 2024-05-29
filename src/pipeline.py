@@ -5,8 +5,15 @@ from codebleu import calc_codebleu
 from .util import create_folder_if_not_exists
 
 class Pipeline:
-    def __init__(self, prediction_model, r2_runner, disassembler, data_path="data"):
+    def __init__(
+            self,
+            prediction_model,
+            compiler,
+            r2_runner,
+            disassembler,
+            data_path="data"):
         self.prediction_model = prediction_model
+        self.compiler = compiler
         self.r2_runner = r2_runner
         self.disassembler = disassembler
         self.data_path = data_path
@@ -29,13 +36,10 @@ class Pipeline:
     def get_sources(self):
         return sorted(os.listdir(self.sources_path))
 
-    def compile(self, source, output, strip=False):
-        output_path = os.path.join(self.builds_path, output)
-        source_path = os.path.join(self.sources_path, source)
-        subprocess.run(['gcc', '-c', '-o', output_path, source_path], check=True)
-
-        if strip:
-            subprocess.run(["strip", output_path], check=True)
+    def compile(self, source, output):
+        self.compiler.compile(
+                os.path.join(self.sources_path, source),
+                os.path.join(self.builds_path, output))
 
     def disassemble(self, executable):
         self.disassembler.disassemble(

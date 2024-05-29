@@ -6,6 +6,7 @@ import subprocess
 from src.pipeline import Pipeline
 from src.r2runner import R2Runner
 from src.disassembler.objdumpdisassembler import ObjdumpDisassembler
+from src.compiler.gcccompiler import GCCCompiler
 from src.util import create_folder_if_not_exists
 from shutil import copyfile
 from types import SimpleNamespace
@@ -35,7 +36,10 @@ class Mock_Model:
             ]
         )
 
-def setup_pipeline(tmp_path, r2_runner, disassembler):
+def setup_pipeline(tmp_path, compiler, r2_runner, disassembler):
+    if compiler is None:
+        compiler = GCCCompiler(subprocess)
+
     if r2_runner is None:
         r2_runner = R2Runner(subprocess)
 
@@ -54,6 +58,7 @@ def setup_pipeline(tmp_path, r2_runner, disassembler):
 
     pipeline = Pipeline(
             prediction_model=Mock_Model("testkey", "test-model", 0.5),
+            compiler=compiler,
             r2_runner=r2_runner,
             disassembler=disassembler,
             data_path=data_path)
@@ -63,30 +68,22 @@ def setup_pipeline(tmp_path, r2_runner, disassembler):
 
 @pytest.fixture
 def pipeline_factory(tmp_path):
-    def create_pipeline(r2_runner=None, disassembler=None):
-        return setup_pipeline(tmp_path, r2_runner, disassembler)
+    def create_pipeline(compiler=None, r2_runner=None, disassembler=None):
+        return setup_pipeline(tmp_path, compiler, r2_runner, disassembler)
     return create_pipeline
 
 def test_get_sources(pipeline_factory):
     sources = pipeline_factory().get_sources()
     assert sources == [source_filename], "The sources array does not contain the expected file"
 
-@pytest.mark.parametrize("stripped", [True, False])
-def test_compile(pipeline_factory, stripped):
-    pipeline = pipeline_factory()
-    pipeline.compile(source_filename, executable_filename, stripped)
-    executable_path = os.path.join(pipeline.data_path, "builds", executable_filename)
+def test_compile_calls_compiler(pipeline_factory):
+    compiler = MagicMock()
+    pipeline = pipeline_factory(compiler=compiler)
+    pipeline.compile(source_filename, executable_filename)
 
-    # Check if the executable exists
-    assert os.path.exists(executable_path), f"Executable {executable_path} was not created"
-
-    # Check if the file is an object file
-    file_type = magic.from_file(executable_path)
-    assert str_contains_word(file_type, 'ELF') and str_contains_word(file_type, 'relocatable'), f"File {executable_path} is not a valid object file. Detected type: {file_type}"
-
-    # Check if the compiled file was stripped according to parameter
-    was_stripped = is_stripped(file_type)
-    assert was_stripped == stripped, f"Strip parameter was not respected, expected {stripped}, but was {was_stripped}"
+    compiler.compile.assert_called_once_with(
+            os.path.join(pipeline.sources_path, source_filename),
+            os.path.join(pipeline.builds_path, executable_filename))
 
 def test_disassemble_calls_disassembler(pipeline_factory):
     mock_disassembler = MagicMock()
@@ -117,7 +114,7 @@ def test_r2_decompile(pipeline_factory):
 
 def test_r2_decompile_calls_r2_func(pipeline_factory):
     mock_r2_runner = MagicMock()
-    pipeline = pipeline_factory(mock_r2_runner)
+    pipeline = pipeline_factory(r2_runner=mock_r2_runner)
     output_path = os.path.join(pipeline.r2d_path, f'{executable_filename}.txt')
 
     with patch("builtins.open", mock_open()) as mock_file:
