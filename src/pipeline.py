@@ -9,19 +9,19 @@ class Pipeline:
             self,
             prediction_model,
             compiler,
-            r2_runner,
+            decompiler,
             disassembler,
             data_path="data"):
         self.prediction_model = prediction_model
         self.compiler = compiler
-        self.r2_runner = r2_runner
+        self.decompiler = decompiler
         self.disassembler = disassembler
         self.data_path = data_path
 
         self.sources_path = os.path.join(data_path, "sources")
         self.builds_path = os.path.join(data_path, "builds")
         self.disassemblies_path = os.path.join(data_path, "disassemblies")
-        self.r2d_path = os.path.join(data_path, "r2_decompile")
+        self.decompilations_path = os.path.join(data_path, "decompilations")
         self.llmd_path = os.path.join(data_path, "llm_decompile")
         self.references_file_path = os.path.join(data_path, "references.txt")
         self.r2_predictions_file_path = os.path.join(data_path, "r2_predictions.txt")
@@ -30,7 +30,7 @@ class Pipeline:
     def init_folders(self):
         create_folder_if_not_exists(self.builds_path)
         create_folder_if_not_exists(self.disassemblies_path)
-        create_folder_if_not_exists(self.r2d_path)
+        create_folder_if_not_exists(self.decompilations_path)
         create_folder_if_not_exists(self.llmd_path)
 
     def get_sources(self):
@@ -46,18 +46,15 @@ class Pipeline:
             os.path.join(self.builds_path, executable),
             os.path.join(self.disassemblies_path, f'{executable}_d.txt'))
 
-    def r2_decompile(self, executable):
-        output_path = os.path.join(self.r2d_path, f'{executable}.txt')
-        self.r2_run('aaa;pdg', executable, output_path)
+    def decompile(self, executable):
+        output_path = os.path.join(self.decompilations_path, f'{executable}.txt')
+        executable_path = os.path.join(self.builds_path, executable)
+        self.decompiler.decompile(executable_path, output_path)
 
         with open(output_path, 'r') as output_file:
             source_code = self.put_code_on_single_line(output_file)
         with open(self.r2_predictions_file_path, 'a') as pred_file:
             pred_file.write(source_code + '\n')
-
-    def r2_run(self, command, executable, output_path):
-        executable_path = os.path.join(self.builds_path, executable)
-        self.r2_runner.run( command, executable_path, output_path)
 
     def add_source_to_dataset(self, source):
         source_path = os.path.join(self.sources_path, source)
@@ -120,8 +117,8 @@ class Pipeline:
             shutil.rmtree(self.builds_path)
         if os.path.isdir(self.disassemblies_path):
             shutil.rmtree(self.disassemblies_path)
-        if os.path.isdir(self.r2d_path):
-            shutil.rmtree(self.r2d_path)
+        if os.path.isdir(self.decompilations_path):
+            shutil.rmtree(self.decompilations_path)
         if os.path.isdir(self.llmd_path):
             shutil.rmtree(self.llmd_path)
         if os.path.exists(self.references_file_path):

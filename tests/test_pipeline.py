@@ -5,6 +5,7 @@ import re
 import subprocess
 from src.pipeline import Pipeline
 from src.r2runner import R2Runner
+from src.decompiler.r2ghidradecompiler import R2GdhidraDecompiler
 from src.disassembler.objdumpdisassembler import ObjdumpDisassembler
 from src.compiler.gcccompiler import GCCCompiler
 from src.util import create_folder_if_not_exists
@@ -15,7 +16,6 @@ from unittest.mock import MagicMock, mock_open, patch
 
 executable_filename = "helloworld"
 source_filename = f"{executable_filename}.c"
-r2_decompile_filename = f"r2d_{executable_filename}.txt"
 mock_prediction = """```c
 Mocked prediction
 ```"""
@@ -36,12 +36,12 @@ class Mock_Model:
             ]
         )
 
-def setup_pipeline(tmp_path, compiler, r2_runner, disassembler):
+def setup_pipeline(tmp_path, compiler, decompiler, disassembler):
     if compiler is None:
         compiler = GCCCompiler(subprocess)
 
-    if r2_runner is None:
-        r2_runner = R2Runner(subprocess)
+    if decompiler is None:
+        decompiler = R2GdhidraDecompiler(R2Runner(subprocess))
 
     if disassembler is None:
         disassembler = ObjdumpDisassembler(subprocess)
@@ -59,7 +59,7 @@ def setup_pipeline(tmp_path, compiler, r2_runner, disassembler):
     pipeline = Pipeline(
             prediction_model=Mock_Model("testkey", "test-model", 0.5),
             compiler=compiler,
-            r2_runner=r2_runner,
+            decompiler=decompiler,
             disassembler=disassembler,
             data_path=data_path)
     pipeline.init_folders()
@@ -68,8 +68,8 @@ def setup_pipeline(tmp_path, compiler, r2_runner, disassembler):
 
 @pytest.fixture
 def pipeline_factory(tmp_path):
-    def create_pipeline(compiler=None, r2_runner=None, disassembler=None):
-        return setup_pipeline(tmp_path, compiler, r2_runner, disassembler)
+    def create_pipeline(compiler=None, decompiler=None, disassembler=None):
+        return setup_pipeline(tmp_path, compiler, decompiler, disassembler)
     return create_pipeline
 
 def test_get_sources(pipeline_factory):
@@ -96,32 +96,15 @@ def test_disassemble_calls_disassembler(pipeline_factory):
             os.path.join(pipeline.builds_path, executable_filename),
             output_path)
 
-def test_r2_run(pipeline_factory):
-    pipeline = pipeline_factory()
-    r2_out_path = os.path.join(pipeline.data_path, "r2_out.txt")
-    pipeline.compile(source_filename, executable_filename)
-    pipeline.r2_run('pd', executable_filename, r2_out_path)
-
-    assert os.path.exists(r2_out_path), f"r2 output file ({r2_out_path}) does not exist after r2 execution."
-
-def test_r2_decompile(pipeline_factory):
-    pipeline = pipeline_factory()
-    pipeline.compile(source_filename, executable_filename)
-    pipeline.r2_decompile(executable_filename)
-
-    decompiled_file = os.path.join(pipeline.r2d_path, f'{executable_filename}.txt')
-    assert os.path.exists(decompiled_file), f"Decompiled file ({decompiled_file}) does not exist."
-
-def test_r2_decompile_calls_r2_func(pipeline_factory):
-    mock_r2_runner = MagicMock()
-    pipeline = pipeline_factory(r2_runner=mock_r2_runner)
-    output_path = os.path.join(pipeline.r2d_path, f'{executable_filename}.txt')
+def test_decompile_calls_decompiler(pipeline_factory):
+    mock_decompiler = MagicMock()
+    pipeline = pipeline_factory(decompiler=mock_decompiler)
+    output_path = os.path.join(pipeline.decompilations_path, f'{executable_filename}.txt')
 
     with patch("builtins.open", mock_open()) as mock_file:
-        pipeline.r2_decompile(executable_filename)
+        pipeline.decompile(executable_filename)
 
-    mock_r2_runner.run.assert_called_once_with(
-            'aaa;pdg',
+    mock_decompiler.decompile.assert_called_once_with(
             os.path.join(pipeline.builds_path, executable_filename),
             output_path)
 
@@ -184,7 +167,7 @@ def test_evaluate_llm(pipeline_factory):
 def test_evaluate_r2(pipeline_factory):
     pipeline = pipeline_factory()
     pipeline.compile(source_filename, executable_filename)
-    pipeline.r2_decompile(executable_filename)
+    pipeline.decompile(executable_filename)
     pipeline.add_source_to_dataset(source_filename)
     result = pipeline.evaluate_r2()
 
@@ -204,7 +187,7 @@ def test_clean_function(pipeline_factory):
     assert os.path.exists(pipeline.references_file_path), "Reference file does not exist before clean function execution."
     assert os.path.exists(pipeline.llm_predictions_file_path), "LLM predictions file does not exist before clean function execution."
     assert os.path.exists(pipeline.r2_predictions_file_path), "R2 predictions file does not exist before clean function execution."
-    assert os.path.exists(pipeline.r2d_path), "r2 decompilation directory does not exist before clean function execution."
+    assert os.path.exists(pipeline.decompilations_path), "r2 decompilation directory does not exist before clean function execution."
     assert os.path.exists(pipeline.llmd_path), "llm decompilation directory does not exist before clean function execution."
 
     pipeline.clean()
@@ -213,7 +196,7 @@ def test_clean_function(pipeline_factory):
     assert not os.path.exists(pipeline.references_file_path), "Reference file exists after clean function execution."
     assert not os.path.exists(pipeline.llm_predictions_file_path), "Predictions file exists after clean function execution."
     assert not os.path.exists(pipeline.r2_predictions_file_path), "R2 predictions file exists after clean function execution."
-    assert not os.path.exists(pipeline.r2d_path), "r2 decompilation directory exists after clean function execution."
+    assert not os.path.exists(pipeline.decompilations_path), "r2 decompilation directory exists after clean function execution."
     assert not os.path.exists(pipeline.llmd_path), "llm decompilation directory exists after clean function execution."
 
 def str_contains_word(string, word):
