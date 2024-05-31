@@ -6,6 +6,7 @@ import subprocess
 from src.compiler.gcccompiler import GCCCompiler
 from src.disassembler.objdumpdisassembler import ObjdumpDisassembler
 from src.disassembler.r2disassembler import R2Disassembler
+from src.decompiler.r2ghidradecompiler import R2GdhidraDecompiler
 from src.openaimodel import OpenAIModel
 from src.pipeline import Pipeline
 from src.r2runner import R2Runner
@@ -80,7 +81,7 @@ def compile_disassemble_reference(pipeline, source_file):
     print("Creating disassembly...")
     pipeline.disassemble(executable_filename)
     print("Creating r2 decompiled files")
-    pipeline.r2_decompile(executable_filename)
+    pipeline.decompile(executable_filename)
     print("Adding to reference dataset...")
     pipeline.add_source_to_dataset(source_file)
     return executable_filename
@@ -102,12 +103,14 @@ if __name__ == '__main__':
 
     r2_runner = R2Runner(subprocess)
 
+    decompiler = R2GdhidraDecompiler(r2_runner)
+
     disassembler = None
 
     if args.disassembler == 'objdump':
         disassembler = ObjdumpDisassembler(subprocess)
     elif args.disassembler == 'r2':
-        disassembler = R2Disassembler(R2Runner(subprocess))
+        disassembler = R2Disassembler(r2_runner)
     else:
         print(f'Error: Unknown disassembler {args.disassembler}')
         sys.exit(1)
@@ -115,7 +118,7 @@ if __name__ == '__main__':
     pipeline = Pipeline(
             prediction_model=model,
             compiler = compiler,
-            r2_runner=r2_runner,
+            decompiler = decompiler,
             disassembler=disassembler,
             data_path=args.data_path)
 
