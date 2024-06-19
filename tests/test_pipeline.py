@@ -8,7 +8,7 @@ from src.r2runner import R2Runner
 from src.decompiler.r2ghidradecompiler import R2GdhidraDecompiler
 from src.disassembler.objdumpdisassembler import ObjdumpDisassembler
 from src.compiler.gcccompiler import GCCCompiler
-from src.util import create_folder_if_not_exists
+from src.util import create_folder_if_not_exists, read_whole_file
 from shutil import copyfile
 from types import SimpleNamespace
 from pathlib import Path
@@ -36,7 +36,7 @@ class Mock_Model:
             ]
         )
 
-def setup_pipeline(tmp_path, compiler, decompiler, disassembler):
+def setup_pipeline(tmp_path, compiler, decompiler, disassembler, evaluator):
     if compiler is None:
         compiler = GCCCompiler(subprocess)
 
@@ -45,6 +45,9 @@ def setup_pipeline(tmp_path, compiler, decompiler, disassembler):
 
     if disassembler is None:
         disassembler = ObjdumpDisassembler(subprocess)
+
+    if evaluator is None:
+        evaluator = MagicMock()
 
     # Setup data folders and copy main.c
     data_path = os.path.join(tmp_path, "data")
@@ -61,6 +64,7 @@ def setup_pipeline(tmp_path, compiler, decompiler, disassembler):
             compiler=compiler,
             decompiler=decompiler,
             disassembler=disassembler,
+            evaluator=evaluator,
             data_path=data_path)
     pipeline.init_folders()
 
@@ -68,8 +72,8 @@ def setup_pipeline(tmp_path, compiler, decompiler, disassembler):
 
 @pytest.fixture
 def pipeline_factory(tmp_path):
-    def create_pipeline(compiler=None, decompiler=None, disassembler=None):
-        return setup_pipeline(tmp_path, compiler, decompiler, disassembler)
+    def create_pipeline(compiler=None, decompiler=None, disassembler=None, evaluator=None):
+        return setup_pipeline(tmp_path, compiler, decompiler, disassembler, evaluator)
     return create_pipeline
 
 def test_get_sources(pipeline_factory):
@@ -151,31 +155,30 @@ def test_put_code_on_single_line(pipeline_factory, source, expected):
     assert result == expected
 
 def test_evaluate_llm(pipeline_factory):
-    pipeline = pipeline_factory()
+    evaluator = MagicMock()
+    pipeline = pipeline_factory(evaluator=evaluator)
     pipeline.compile(source_filename, executable_filename)
     pipeline.disassemble(executable_filename)
     pipeline.generate_and_save_prediction(executable_filename)
     pipeline.add_source_to_dataset(source_filename)
     result = pipeline.evaluate_llm()
 
-    assert isinstance(result['codebleu'], (int, float)), "Value is not a number"
-    assert isinstance(result['ngram_match_score'], (int, float)), "Value is not a number"
-    assert isinstance(result['weighted_ngram_match_score'], (int, float)), "Value is not a number"
-    assert isinstance(result['syntax_match_score'], (int, float)), "Value is not a number"
-    assert isinstance(result['dataflow_match_score'], (int, float)), "Value is not a number"
+    evaluator.evaluate.assert_called_once_with(
+        read_whole_file(pipeline.references_file_path),
+        read_whole_file(pipeline.llm_predictions_file_path))
+
 
 def test_evaluate_r2(pipeline_factory):
-    pipeline = pipeline_factory()
+    evaluator = MagicMock()
+    pipeline = pipeline_factory(evaluator=evaluator)
     pipeline.compile(source_filename, executable_filename)
     pipeline.decompile(executable_filename)
     pipeline.add_source_to_dataset(source_filename)
     result = pipeline.evaluate_r2()
 
-    assert isinstance(result['codebleu'], (int, float)), "Value is not a number"
-    assert isinstance(result['ngram_match_score'], (int, float)), "Value is not a number"
-    assert isinstance(result['weighted_ngram_match_score'], (int, float)), "Value is not a number"
-    assert isinstance(result['syntax_match_score'], (int, float)), "Value is not a number"
-    assert isinstance(result['dataflow_match_score'], (int, float)), "Value is not a number"
+    evaluator.evaluate.assert_called_once_with(
+        read_whole_file(pipeline.references_file_path),
+        read_whole_file(pipeline.r2_predictions_file_path))
 
 def test_clean_function(pipeline_factory):
     pipeline = pipeline_factory()

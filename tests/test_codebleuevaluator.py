@@ -56,4 +56,9 @@ def test_evaluate_integration(prediction_filename, expected_score):
     for key, value in result.items():
         print(f"{key}: {value:.2%}")
 
+    assert isinstance(result['codebleu'], (int, float)), "Value is not a number"
+    assert isinstance(result['ngram_match_score'], (int, float)), "Value is not a number"
+    assert isinstance(result['weighted_ngram_match_score'], (int, float)), "Value is not a number"
+    assert isinstance(result['syntax_match_score'], (int, float)), "Value is not a number"
+    assert isinstance(result['dataflow_match_score'], (int, float)), "Value is not a number"
     assert result == expected_score, f'Unexpected score: {result}'

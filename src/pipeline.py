@@ -1,7 +1,6 @@
 import os
 import shutil
 import subprocess
-from codebleu import calc_codebleu
 from .util import create_folder_if_not_exists, read_whole_file
 
 class Pipeline:
@@ -11,11 +10,13 @@ class Pipeline:
             compiler,
             decompiler,
             disassembler,
+            evaluator,
             data_path="data"):
         self.prediction_model = prediction_model
         self.compiler = compiler
         self.decompiler = decompiler
         self.disassembler = disassembler
+        self.evaluator = evaluator
         self.data_path = data_path
 
         self.sources_path = os.path.join(data_path, "sources")
@@ -97,7 +98,7 @@ class Pipeline:
         reference_code = read_whole_file(self.references_file_path)
         prediction_code = read_whole_file(self.llm_predictions_file_path)
 
-        return calc_codebleu([reference_code], [prediction_code], lang="c", weights=(0.25, 0.25, 0.25, 0.25), tokenizer=None)
+        return self.evaluator.evaluate(reference_code, prediction_code)
 
     def evaluate_r2(self):
         # Read reference and prediction from their respective files
@@ -105,7 +106,7 @@ class Pipeline:
         reference_code = read_whole_file(self.references_file_path)
         prediction_code = read_whole_file(self.r2_predictions_file_path)
 
-        return calc_codebleu([reference_code], [prediction_code], lang="c", weights=(0.25, 0.25, 0.25, 0.25), tokenizer=None)
+        return self.evaluator.evaluate(reference_code, prediction_code)
 
     def clean(self):
         if os.path.isdir(self.builds_path):
