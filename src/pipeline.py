@@ -2,7 +2,7 @@ import os
 import shutil
 import subprocess
 from codebleu import calc_codebleu
-from .util import create_folder_if_not_exists
+from .util import create_folder_if_not_exists, read_whole_file
 
 class Pipeline:
     def __init__(
@@ -88,27 +88,22 @@ class Pipeline:
         with open(decompile_path, 'w') as d_file:
             d_file.write(prediction)
 
-    def read_code_from_file(self, file_path):
-        with open(file_path, 'r') as file:
-            code = file.read()
-        return code
-
     def put_code_on_single_line(self, input_file):
         return ' '.join([line.strip() for line in input_file if line.strip()])
 
     def evaluate_llm(self):
         # Read reference and prediction from their respective files
 
-        reference_code = self.read_code_from_file(self.references_file_path)
-        prediction_code = self.read_code_from_file(self.llm_predictions_file_path)
+        reference_code = read_whole_file(self.references_file_path)
+        prediction_code = read_whole_file(self.llm_predictions_file_path)
 
         return calc_codebleu([reference_code], [prediction_code], lang="c", weights=(0.25, 0.25, 0.25, 0.25), tokenizer=None)
 
     def evaluate_r2(self):
         # Read reference and prediction from their respective files
 
-        reference_code = self.read_code_from_file(self.references_file_path)
-        prediction_code = self.read_code_from_file(self.r2_predictions_file_path)
+        reference_code = read_whole_file(self.references_file_path)
+        prediction_code = read_whole_file(self.r2_predictions_file_path)
 
         return calc_codebleu([reference_code], [prediction_code], lang="c", weights=(0.25, 0.25, 0.25, 0.25), tokenizer=None)
 
