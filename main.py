@@ -3,10 +3,12 @@ import os
 import argparse
 import pickle
 import subprocess
+from codebleu import calc_codebleu
 from src.compiler.gcccompiler import GCCCompiler
 from src.disassembler.objdumpdisassembler import ObjdumpDisassembler
 from src.disassembler.r2disassembler import R2Disassembler
 from src.decompiler.r2ghidradecompiler import R2GdhidraDecompiler
+from src.evaluator.codebleuevaluator import CodeBleuEvaluator
 from src.openaimodel import OpenAIModel
 from src.pipeline import Pipeline
 from src.r2runner import R2Runner
@@ -115,11 +117,14 @@ if __name__ == '__main__':
         print(f'Error: Unknown disassembler {args.disassembler}')
         sys.exit(1)
 
+    evaluator = CodeBleuEvaluator(calc_codebleu)
+
     pipeline = Pipeline(
             prediction_model=model,
             compiler = compiler,
             decompiler = decompiler,
             disassembler=disassembler,
+            evaluator=evaluator,
             data_path=args.data_path)
 
     if args.command == 'clean':
