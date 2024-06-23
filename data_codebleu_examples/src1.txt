@@ -1,0 +1,1 @@
+float trun_num(float num) { return (int)num - (int)num; }
