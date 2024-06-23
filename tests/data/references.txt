@@ -1,0 +1,4 @@
+void reverseArray(int arr[], int size) { for (int i = 0; i < size / 2; i++) { int temp = arr[i]; arr[i] = arr[size - 1 - i]; arr[size - 1 - i] = temp; } }
+int factorial(int n) { if (n == 0) { return 1; } else { return n * factorial(n - 1); } }
+#include <stdio.h> int print_hello() { printf("Hello, World!\n"); return 0; }
+#include <stdio.h> int sum(int number1, int number2) { return number1 + number2; }

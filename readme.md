@@ -10,70 +10,53 @@ pip3
 pkg-config # Required to install r2ghidra
 ```
 
-Install python requirements:
+In addition a .env file should be created with an OpenAI API key, looking like:
 ```
+export OPENAI_API_KEY="key here"
+```
+
+Setting up and installing python requirements:
+```
+python -m venv .venv
+source init_shell.sh
 pip3 install -r requirements.txt
 ```
 
+Sourcing `init_shell.sh` has to be done each time you start a new terminal.
+
 For the tests:
 ```
-pip3 install pytest pytest-watcher
+pip3 install -r requirements_dev.txt
 ```
 
-## Compiling and creating disassembly
+## Running
 
-main.c contains some simple code, with a Makefile to build it. Then I create a disassembly using:
+To see how to use the main.py program can be used to run the pipeline use `python main.py -h`:
 
 ```
-make
-radare2 -qc "pd @ main" main > disassembly.txt
+usage: main.py [-h] [-d DATA_DIR] [-r RESULTS] [-m MODEL] [-s] [-o] {clean,prepare,print,evaluate}
+
+Run pipeline commands.
+
+positional arguments:
+  {clean,prepare,print,evaluate}
+                        Command to execute
+
+options:
+  -h, --help            show this help message and exit
+  -d DATA_DIR, --data-dir DATA_DIR
+                        Data directory
+  -r RESULTS, --results RESULTS
+                        Results filename
+  -m MODEL, --model MODEL
+                        Model name
+  -s, --strip           Strip the binary during compilation
+  -o, --objdump         Use objdump instead of r2 for disassembly
 ```
 
-NOTE: To output the disassembly, you HAVE to do `$ echo 'e scr.color=1' >> ~/.radare2rc` to disable color output!
+For the most simple use case, using the 4 sources in data/ (default directory), run `python main.py evaluate`
 
-## Dataset creation
-
-The source code will be the reference data. To use it whith CodeBLEU it needs to be put on a single line so that
-```
-#include <stdio.h>
-
-int main() {
-    printf("Hello, World!\n");
-    return 0;
-}
-```
-becomes
-```
-#include <stdio.h> int main() { printf("Hello, World!\n"); return 0; }
-```
-This file should be called references.txt
-
-## Prediction
-
-The disassembly should be fed into a LLM with a fitting prompt to make it reconstruct the original source code. The code reconstructed by the LLM should be put in a file `predictions.txt`, on a single line in the same way as the reference.
-
-
-Then something along of the following code can be used to run evaluation:
-```
-from codebleu import calc_codebleu
-
-def read_code_from_file(file_path):
-    with open(file_path, 'r') as file:
-        code = file.read()
-    return code
-
-# Read reference and prediction from their respective files
-reference_file_path = 'references.txt'
-prediction_file_path = 'predictions.txt'
-
-reference_code = read_code_from_file(reference_file_path)
-prediction_code = read_code_from_file(prediction_file_path)
-
-result = calc_codebleu([reference_code], [prediction_code], lang="c", weights=(0.25, 0.25, 0.25, 0.25), tokenizer=None)
-print(result)
-```
-
-A requirement.txt file for python requirements should also be produced.
+For decompile-eval tests, first run `python extract_decompile-eval.py` and then `python main.py -d data_decompile_eval evaluate`. The first scripts downloads and creates the separate source directory.
 
 ## Testing
 

@@ -4,11 +4,11 @@ data/disassemblies/
 data/builds/
 data/ghidra/
 data/llm_decompile/
-data/r2_decompile/
+data/decompilations/
 data/references.txt
 data/llm_predictions.txt
 data/r2_predictions.txt
+data/evaluation/
 .coverage
 .env
 data_decompile_eval
-*.pkl
