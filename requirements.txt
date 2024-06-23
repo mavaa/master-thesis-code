@@ -2,3 +2,5 @@ openai
 codebleu
 requests
 tabulate
+matplotlib
+pandas
