@@ -1,8 +1,6 @@
 import sys
 import os
 import argparse
-import matplotlib.pyplot as plt
-import pandas as pd
 import pickle
 import subprocess
 from codebleu import calc_codebleu
@@ -14,8 +12,7 @@ from src.evaluator.codebleuevaluator import CodeBleuEvaluator
 from src.openaimodel import OpenAIModel
 from src.pipeline import Pipeline
 from src.r2runner import R2Runner
-from src.util import create_folder_if_not_exists
-from tabulate import tabulate
+from src.util import create_folder_if_not_exists, codebleu_create_graph, codebleu_create_latex_table
 
 def run_pipeline_prepare(pipeline, args):
     for source_file in pipeline.get_sources():
@@ -67,17 +64,16 @@ def run_pipeline_evaluate(pipeline, args, eval_path):
     with open(os.path.join(eval_path, args.results_pkl), 'wb') as f:
         pickle.dump(results, f)
 
-    # Print results in a table format for LaTeX
+    # Define headers for the LaTeX table
     headers = ["Metric", "LLM Score", "R2 Score"]
-    table_data = []
-    for key in result_llm.keys():
-        table_data.append([key, f"{result_llm[key]:.2%}", f"{result_r2[key]:.2%}"])
 
-    # Save results to a file
-    with open(os.path.join(eval_path, args.results_latex), 'w') as f:
-        f.write(tabulate(table_data, headers, tablefmt="latex"))
+    codebleu_create_latex_table(
+        os.path.join(eval_path, args.results_latex),
+        [result_llm, result_r2],
+        ["LLM", "R2"],
+        headers)
 
-    create_graph(
+    codebleu_create_graph(
             os.path.join(eval_path, args.results_pkl),
             os.path.join(eval_path, args.plot_filename))
 
@@ -95,41 +91,6 @@ def compile_disassemble_reference(pipeline, source_file):
     print("Adding to reference dataset...")
     pipeline.add_source_to_dataset(source_file)
     return executable_filename
-
-def create_graph(pkl_file_path, png_file_path):
-    # Load the data from the pickle file
-    data = pd.read_pickle(pkl_file_path)
-
-    # Transform the dictionary into a dataframe for plotting
-    df = pd.DataFrame(data)
-
-    # Resetting index for easier plotting
-    df.reset_index(inplace=True)
-    df = df.rename(columns={'index': 'Category'})
-
-    # Plotting
-    plt.figure(figsize=(10, 6))
-
-    # Plot each algorithm's scores
-    for column in df.columns[1:]:  # Skipping the first column which is 'Category'
-        plt.plot(df['Category'], df[column], marker='o', label=column)
-
-    # Add titles and labels
-    plt.title('Algorithm Performance Across Categories')
-    plt.xlabel('Categories')
-    plt.ylabel('Scores')
-
-    # Add a legend
-    plt.legend()
-
-    # Add grid
-    plt.grid(True)
-
-    # Save the plot to a file
-    plt.savefig(png_file_path)
-
-    # Show the plot
-    plt.show()
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Run pipeline commands.')
