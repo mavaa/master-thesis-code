@@ -94,6 +94,7 @@ def compile_disassemble_reference(pipeline, source_file):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Run pipeline commands.')
+    parser.add_argument('-b', '--base-prompt', type=str, default='Reconstruct the original C source code from the following disassembly:', help='Base prompt to prepend to the disassembly')
     parser.add_argument('-d', '--data-path', type=str, default='data', help='Data directory')
     parser.add_argument('-r', '--results-pkl', type=str, default='results.pkl', help='Results filename')
     parser.add_argument('-l', '--results-latex', type=str, default='table.tex', help='Results latex table filename')
@@ -109,7 +110,7 @@ if __name__ == '__main__':
 
     create_folder_if_not_exists(eval_path)
 
-    model = OpenAIModel(os.environ.get("OPENAI_API_KEY"), args.model, 0)
+    model = OpenAIModel(os.environ.get("OPENAI_API_KEY"), args.model, 0, args.base_prompt)
 
     compiler = GCCCompiler(subprocess, args.strip)
 
