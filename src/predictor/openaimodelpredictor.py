@@ -20,4 +20,12 @@ class OpenAIModelPredictor:
             model=self.model,
             temperature=self.temperature
         )
-        return chat_completion
+        response = chat_completion.choices[0].message.content.replace("```", "")
+
+        lines = response.split('\n')
+        if lines and lines[0].strip().lower() == "c":
+            lines = lines[1:]
+
+        response = "\n".join(lines)
+
+        return response

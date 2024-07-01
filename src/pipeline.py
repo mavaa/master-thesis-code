@@ -50,17 +50,10 @@ class Pipeline:
             file.write(source_code + '\n')
 
     def generate_prediction(self, executable, predictor):
+        build_path = os.path.join(self.builds_path, executable)
         disassembly_path = os.path.join(self.disassemblies_path, f'{executable}_d.txt')
-        with open(disassembly_path, 'r') as file:
-            prompt=f"Reconstruct the original C source code from the following disassembly:\n{file.read()}"
 
-        prediction = predictor.generate_prediction(prompt).replace("```", "")
-
-        lines = prediction.split('\n')
-        if lines and lines[0].strip().lower() == "c":
-            lines = lines[1:]
-
-        prediction = "\n".join(lines)
+        prediction = predictor.generate_prediction(build_path, disassembly_path)
 
         prediction_file_path = os.path.join(self.predictions_path, f'{predictor.name}_{executable}.c')
         with open(prediction_file_path, 'w') as file:

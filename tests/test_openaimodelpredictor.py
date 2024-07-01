@@ -7,6 +7,11 @@ api_key = "replace_me"
 base_promt = "test prompt"
 test_code = "binary code would go here"
 
+mock_prediction = """```c
+Mocked prediction
+```"""
+mock_prediction_expected_result = "Mocked prediction\n"
+
 @pytest.fixture
 def setup_model():
     yield OpenAIModelPredictor(api_key, "test-model", 0.5, base_promt)
@@ -20,7 +25,7 @@ def mock_openai_client():
     with patch('src.predictor.openaimodelpredictor.OpenAI') as mock:
         mock_instance = mock.return_value
         mock_chat_completion = MagicMock()
-        mock_chat_completion.choices = [{'message': {'content': 'mocked response'}}]
+        mock_chat_completion.choices = [MagicMock(message=MagicMock(content=mock_prediction))]
         mock_instance.chat.completions.create.return_value = mock_chat_completion
         yield mock
 
@@ -36,4 +41,4 @@ def test_openaimodel_generate_prediction(mock_openai_client, setup_model):
     )
 
     # Assert the mock response is correctly returned
-    assert response.choices[0]['message']['content'] == 'mocked response', "The response from generate_prediction was not as expected"
+    assert response == mock_prediction_expected_result, "The response from generate_prediction was not as expected"

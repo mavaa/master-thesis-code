@@ -16,33 +16,23 @@ from unittest.mock import MagicMock, mock_open, patch
 
 executable_filename = "helloworld"
 source_filename = f"{executable_filename}.c"
-mock_prediction = """```c
-Mocked prediction
-```"""
-mock_prediction_expected_result = "Mocked prediction\n"
+mock_prediction_expected_result = "Mocked prediction"
 
-class Mock_Predictor:
-    def __init__(self, api_key, model, temperature):
-        self.api_key = api_key
-        self.name = "Mock_Predictor"
-
-    def generate_prediction(self, prompt):
-        return mock_prediction
-
-mock_predictor = Mock_Predictor("testkey", "test-model", 0.5)
+def create_mock_predictor(name):
+    mock_predictor = MagicMock()
+    mock_predictor.name = name
+    mock_predictor.generate_prediction.return_value = mock_prediction_expected_result
+    return mock_predictor
 
 def setup_pipeline(tmp_path, compiler, disassembler, predictors, evaluator):
     if compiler is None:
         compiler = GCCCompiler(subprocess)
 
-    #if decompiler is None:
-        #decompiler = R2GdhidraDecompiler(R2Runner(subprocess))
-
     if disassembler is None:
         disassembler = ObjdumpDisassembler(subprocess)
 
     if predictors is None:
-        predictors = [mock_predictor]
+        predictors = [create_mock_predictor('test')]
 
     if evaluator is None:
         evaluator = MagicMock()
@@ -58,9 +48,7 @@ def setup_pipeline(tmp_path, compiler, disassembler, predictors, evaluator):
              os.path.join(sources_path, source_filename))
 
     pipeline = Pipeline(
-            #prediction_model=,
             compiler=compiler,
-            #decompiler=decompiler,
             disassembler=disassembler,
             predictors=predictors,
             evaluator=evaluator,
@@ -99,19 +87,6 @@ def test_disassemble_calls_disassembler(pipeline_factory):
             os.path.join(pipeline.builds_path, executable_filename),
             output_path)
 
-# TODO: Not deeded?
-#def test_decompile_calls_decompiler(pipeline_factory):
-    #mock_decompiler = MagicMock()
-    #pipeline = pipeline_factory(decompiler=mock_decompiler)
-    #output_path = os.path.join(pipeline.decompilations_path, f'{executable_filename}.txt')
-
-    #with patch("builtins.open", mock_open()) as mock_file:
-        #pipeline.decompile(executable_filename)
-
-    #mock_decompiler.decompile.assert_called_once_with(
-            #os.path.join(pipeline.builds_path, executable_filename),
-            #output_path)
-
 def test_add_source_to_dataset(pipeline_factory):
     pipeline = pipeline_factory()
     pipeline.add_source_to_dataset(source_filename)
@@ -125,11 +100,15 @@ def test_add_source_to_dataset(pipeline_factory):
 
 def test_generate_prediction(pipeline_factory):
     pipeline = pipeline_factory()
+    preditcor = create_mock_predictor('test')
+    build_path = os.path.join(pipeline.builds_path, executable_filename)
+    disassembly_path = os.path.join(pipeline.disassemblies_path, f'{executable_filename}_d.txt')
     pipeline.compile(source_filename, executable_filename)
     pipeline.disassemble(executable_filename)
-    prediction = pipeline.generate_prediction(executable_filename, mock_predictor)
 
-    assert prediction == mock_prediction_expected_result, f'Unexpected prediction: {prediction}'
+    prediction = pipeline.generate_prediction(executable_filename, preditcor)
+
+    preditcor.generate_prediction.assert_called_once_with(build_path, disassembly_path)
 
 def test_generate_and_save_predictions(pipeline_factory):
     pipeline = pipeline_factory()
@@ -156,7 +135,7 @@ def test_put_code_on_single_line(pipeline_factory, source, expected):
 
 def test_evaluate_predictors(pipeline_factory):
     evaluator = MagicMock()
-    predictors = [ MagicMock(), MagicMock(), MagicMock() ]
+    predictors = [ create_mock_predictor('a'), create_mock_predictor('b'), create_mock_predictor('c')]
 
     pipeline = pipeline_factory(predictors=predictors, evaluator=evaluator)
     pipeline.compile(source_filename, executable_filename)
