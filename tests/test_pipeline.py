@@ -19,32 +19,30 @@ source_filename = f"{executable_filename}.c"
 mock_prediction = """```c
 Mocked prediction
 ```"""
-mock_prediction_expected_result = "Mocked prediction"
+mock_prediction_expected_result = "Mocked prediction\n"
 
-class Mock_Model:
+class Mock_Predictor:
     def __init__(self, api_key, model, temperature):
         self.api_key = api_key
+        self.name = "Mock_Predictor"
 
     def generate_prediction(self, prompt):
-        return SimpleNamespace(
-            choices=[
-                SimpleNamespace(
-                    message=SimpleNamespace(
-                        content=mock_prediction
-                    )
-                )
-            ]
-        )
+        return mock_prediction
 
-def setup_pipeline(tmp_path, compiler, decompiler, disassembler, evaluator):
+mock_predictor = Mock_Predictor("testkey", "test-model", 0.5)
+
+def setup_pipeline(tmp_path, compiler, disassembler, predictors, evaluator):
     if compiler is None:
         compiler = GCCCompiler(subprocess)
 
-    if decompiler is None:
-        decompiler = R2GdhidraDecompiler(R2Runner(subprocess))
+    #if decompiler is None:
+        #decompiler = R2GdhidraDecompiler(R2Runner(subprocess))
 
     if disassembler is None:
         disassembler = ObjdumpDisassembler(subprocess)
+
+    if predictors is None:
+        predictors = [mock_predictor]
 
     if evaluator is None:
         evaluator = MagicMock()
@@ -60,10 +58,11 @@ def setup_pipeline(tmp_path, compiler, decompiler, disassembler, evaluator):
              os.path.join(sources_path, source_filename))
 
     pipeline = Pipeline(
-            prediction_model=Mock_Model("testkey", "test-model", 0.5),
+            #prediction_model=,
             compiler=compiler,
-            decompiler=decompiler,
+            #decompiler=decompiler,
             disassembler=disassembler,
+            predictors=predictors,
             evaluator=evaluator,
             data_path=data_path)
     pipeline.init_folders()
@@ -72,8 +71,8 @@ def setup_pipeline(tmp_path, compiler, decompiler, disassembler, evaluator):
 
 @pytest.fixture
 def pipeline_factory(tmp_path):
-    def create_pipeline(compiler=None, decompiler=None, disassembler=None, evaluator=None):
-        return setup_pipeline(tmp_path, compiler, decompiler, disassembler, evaluator)
+    def create_pipeline(compiler=None, disassembler=None, predictors=None, evaluator=None):
+        return setup_pipeline(tmp_path, compiler, disassembler, predictors, evaluator)
     return create_pipeline
 
 def test_get_sources(pipeline_factory):
@@ -100,17 +99,18 @@ def test_disassemble_calls_disassembler(pipeline_factory):
             os.path.join(pipeline.builds_path, executable_filename),
             output_path)
 
-def test_decompile_calls_decompiler(pipeline_factory):
-    mock_decompiler = MagicMock()
-    pipeline = pipeline_factory(decompiler=mock_decompiler)
-    output_path = os.path.join(pipeline.decompilations_path, f'{executable_filename}.txt')
+# TODO: Not deeded?
+#def test_decompile_calls_decompiler(pipeline_factory):
+    #mock_decompiler = MagicMock()
+    #pipeline = pipeline_factory(decompiler=mock_decompiler)
+    #output_path = os.path.join(pipeline.decompilations_path, f'{executable_filename}.txt')
 
-    with patch("builtins.open", mock_open()) as mock_file:
-        pipeline.decompile(executable_filename)
+    #with patch("builtins.open", mock_open()) as mock_file:
+        #pipeline.decompile(executable_filename)
 
-    mock_decompiler.decompile.assert_called_once_with(
-            os.path.join(pipeline.builds_path, executable_filename),
-            output_path)
+    #mock_decompiler.decompile.assert_called_once_with(
+            #os.path.join(pipeline.builds_path, executable_filename),
+            #output_path)
 
 def test_add_source_to_dataset(pipeline_factory):
     pipeline = pipeline_factory()
@@ -127,22 +127,22 @@ def test_generate_prediction(pipeline_factory):
     pipeline = pipeline_factory()
     pipeline.compile(source_filename, executable_filename)
     pipeline.disassemble(executable_filename)
-    prediction = pipeline.generate_prediction(executable_filename)
+    prediction = pipeline.generate_prediction(executable_filename, mock_predictor)
 
-    assert prediction == mock_prediction, f'Unexpected prediction: {prediction}'
+    assert prediction == mock_prediction_expected_result, f'Unexpected prediction: {prediction}'
 
-def test_generate_and_save_prediction(pipeline_factory):
+def test_generate_and_save_predictions(pipeline_factory):
     pipeline = pipeline_factory()
     pipeline.compile(source_filename, executable_filename)
     pipeline.disassemble(executable_filename)
-    pipeline.generate_and_save_prediction(executable_filename)
+    pipeline.generate_and_save_predictions(executable_filename)
 
-    assert os.path.exists(pipeline.llm_predictions_file_path), "Predictions file does not exist."
+    assert os.path.exists(pipeline.predictions_path), "Predictions folder does not exist."
 
-    with open(pipeline.llm_predictions_file_path, 'r') as file:
-        prediction_file_content  = file.read()
-
-    assert prediction_file_content == mock_prediction_expected_result + '\n'
+    for predictor in pipeline.predictors:
+        prediction_file_path = os.path.join(pipeline.predictions_path, f'{predictor.name}_{executable_filename}.c')
+        with open(prediction_file_path, 'r') as file:
+            assert file.read() == mock_prediction_expected_result
 
 @pytest.mark.parametrize("source,expected", [
     (["hey", "there", "you"], "hey there you"),
@@ -154,53 +154,39 @@ def test_put_code_on_single_line(pipeline_factory, source, expected):
     result = pipeline.put_code_on_single_line(source)
     assert result == expected
 
-def test_evaluate_llm(pipeline_factory):
+def test_evaluate_predictors(pipeline_factory):
     evaluator = MagicMock()
-    pipeline = pipeline_factory(evaluator=evaluator)
+    predictors = [ MagicMock(), MagicMock(), MagicMock() ]
+
+    pipeline = pipeline_factory(predictors=predictors, evaluator=evaluator)
     pipeline.compile(source_filename, executable_filename)
     pipeline.disassemble(executable_filename)
-    pipeline.generate_and_save_prediction(executable_filename)
+    pipeline.generate_and_save_predictions(executable_filename)
     pipeline.add_source_to_dataset(source_filename)
-    result = pipeline.evaluate_llm()
+    results = pipeline.evaluate()
 
-    evaluator.evaluate.assert_called_once_with(
-        read_whole_file(pipeline.references_file_path),
-        read_whole_file(pipeline.llm_predictions_file_path))
+    for predictor in predictors:
+        prediction_file_path = os.path.join(pipeline.predictions_path, f'{predictor.name}_all.txt')
+        evaluator.evaluate.assert_any_call(
+            read_whole_file(pipeline.references_file_path),
+            read_whole_file(prediction_file_path))
 
-
-def test_evaluate_r2(pipeline_factory):
-    evaluator = MagicMock()
-    pipeline = pipeline_factory(evaluator=evaluator)
-    pipeline.compile(source_filename, executable_filename)
-    pipeline.decompile(executable_filename)
-    pipeline.add_source_to_dataset(source_filename)
-    result = pipeline.evaluate_r2()
-
-    evaluator.evaluate.assert_called_once_with(
-        read_whole_file(pipeline.references_file_path),
-        read_whole_file(pipeline.r2_predictions_file_path))
+    assert len(results) == len(predictors)
 
 def test_clean_function(pipeline_factory):
     pipeline = pipeline_factory()
     Path(pipeline.references_file_path).touch()
-    Path(pipeline.llm_predictions_file_path).touch()
-    Path(pipeline.r2_predictions_file_path).touch()
+    Path(pipeline.predictions_path).touch()
     assert os.path.exists(pipeline.builds_path), "Build directory does not exist before clean function execution."
     assert os.path.exists(pipeline.disassemblies_path), "Disassemblies directory does not exist before clean function execution."
     assert os.path.exists(pipeline.references_file_path), "Reference file does not exist before clean function execution."
-    assert os.path.exists(pipeline.llm_predictions_file_path), "LLM predictions file does not exist before clean function execution."
-    assert os.path.exists(pipeline.r2_predictions_file_path), "R2 predictions file does not exist before clean function execution."
-    assert os.path.exists(pipeline.decompilations_path), "r2 decompilation directory does not exist before clean function execution."
-    assert os.path.exists(pipeline.llmd_path), "llm decompilation directory does not exist before clean function execution."
+    assert os.path.exists(pipeline.predictions_path), "LLM predictions file does not exist before clean function execution."
 
     pipeline.clean()
     assert not os.path.exists(pipeline.builds_path), "Build directory exists after clean function execution."
     assert not os.path.exists(pipeline.disassemblies_path), "Disassemblies directory exists after clean function execution."
     assert not os.path.exists(pipeline.references_file_path), "Reference file exists after clean function execution."
-    assert not os.path.exists(pipeline.llm_predictions_file_path), "Predictions file exists after clean function execution."
-    assert not os.path.exists(pipeline.r2_predictions_file_path), "R2 predictions file exists after clean function execution."
-    assert not os.path.exists(pipeline.decompilations_path), "r2 decompilation directory exists after clean function execution."
-    assert not os.path.exists(pipeline.llmd_path), "llm decompilation directory exists after clean function execution."
+    assert not os.path.exists(pipeline.predictions_path), "Predictions file exists after clean function execution."
 
 def str_contains_word(string, word):
     return re.search(r'\b' + word + r'\b', string) is not None
