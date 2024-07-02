@@ -9,7 +9,7 @@ from src.disassembler.objdumpdisassembler import ObjdumpDisassembler
 from src.disassembler.r2disassembler import R2Disassembler
 from src.decompiler.r2ghidradecompiler import R2GdhidraDecompiler
 from src.evaluator.codebleuevaluator import CodeBleuEvaluator
-from src.openaimodel import OpenAIModel
+from src.predictor.openaimodelpredictor import OpenAIModelPredictor
 from src.pipeline import Pipeline
 from src.r2runner import R2Runner
 from src.util import create_folder_if_not_exists, codebleu_create_graph, codebleu_create_latex_table
@@ -39,7 +39,7 @@ def run_pipeline_evaluate(pipeline, args, eval_path):
     for source_file in pipeline.get_sources():
         executable_filename = compile_disassemble_reference(pipeline, source_file)
         print("Generating prediction...")
-        pipeline.generate_and_save_prediction(executable_filename)
+        pipeline.generate_and_save_predictions(executable_filename)
         print()
 
     print("Evaluating LLM...")
@@ -86,8 +86,6 @@ def compile_disassemble_reference(pipeline, source_file):
     pipeline.compile(source_file, executable_filename)
     print("Creating disassembly...")
     pipeline.disassemble(executable_filename)
-    print("Creating r2 decompiled files")
-    pipeline.decompile(executable_filename)
     print("Adding to reference dataset...")
     pipeline.add_source_to_dataset(source_file)
     return executable_filename
@@ -110,7 +108,7 @@ if __name__ == '__main__':
 
     create_folder_if_not_exists(eval_path)
 
-    model = OpenAIModel(os.environ.get("OPENAI_API_KEY"), args.model, 0, args.base_prompt)
+    openai_predictor = OpenAIModelPredictor(os.environ.get("OPENAI_API_KEY"), args.model, 0, args.base_prompt)
 
     compiler = GCCCompiler(subprocess, args.strip)
 
@@ -131,10 +129,9 @@ if __name__ == '__main__':
     evaluator = CodeBleuEvaluator(calc_codebleu)
 
     pipeline = Pipeline(
-            prediction_model=model,
             compiler = compiler,
-            decompiler = decompiler,
             disassembler=disassembler,
+            predictors=[openai_predictor],
             evaluator=evaluator,
             data_path=args.data_path)
 

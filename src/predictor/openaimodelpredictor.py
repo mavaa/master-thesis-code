@@ -8,6 +8,7 @@ class OpenAIModelPredictor:
         self.model = model
         self.temperature = temperature
         self.base_prompt = base_prompt
+        self.name = f"OpenAI-{model}"
 
     def generate_prediction(self, binary_path, disassembly_code):
         chat_completion = self.client.chat.completions.create(
