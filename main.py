@@ -14,6 +14,21 @@ from src.pipeline import Pipeline
 from src.r2runner import R2Runner
 from src.util import create_folder_if_not_exists, codebleu_create_graph, codebleu_create_latex_table
 
+default_llm_prompt="""
+**Prompt:**
+
+Below is a snippet of assembly code. Please reconstruct the original C code as accurately as possible and provide only the code block without any explanations or additional text.
+
+**Assembly Code:**
+```
+{disassembly}
+```
+
+**Reconstructed C Code:**
+```c
+
+"""
+
 def run_pipeline_prepare(pipeline, args):
     for source_file in pipeline.get_sources():
         compile_disassemble_reference(pipeline, source_file)
@@ -92,7 +107,7 @@ def compile_disassemble_reference(pipeline, source_file):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Run pipeline commands.')
-    parser.add_argument('-b', '--base-prompt', type=str, default='Reconstruct the original C source code from the following disassembly:', help='Base prompt to prepend to the disassembly')
+    parser.add_argument('-b', '--base-prompt', type=str, default=default_llm_prompt, help='Base prompt to send to LLMs. Use `{disassembly}` in the string where you want to place the disassembled code.')
     parser.add_argument('-d', '--data-path', type=str, default='data', help='Data directory')
     parser.add_argument('-r', '--results-pkl', type=str, default='results.pkl', help='Results filename')
     parser.add_argument('-l', '--results-latex', type=str, default='table.tex', help='Results latex table filename')

@@ -13,7 +13,7 @@ class OpenAIModelPredictor:
 
     def generate_prediction(self, binary_path, disassembly_path):
         disassembly = read_whole_file(disassembly_path)
-        prompt = f"{self.base_prompt}\n{disassembly}"
+        prompt = self.base_prompt.format(disassembly=disassembly)
         chat_completion = self.client.chat.completions.create(
             messages=[
                 {

@@ -4,7 +4,7 @@ from src.predictor.openaimodelpredictor import OpenAIModelPredictor
 
 api_key = "replace_me"
 
-base_promt = "test prompt"
+base_promt = "test prompt with code: {disassembly}\nend"
 test_code = "binary code would go here"
 
 mock_prediction = """```c
@@ -41,7 +41,7 @@ def test_openaimodel_generate_prediction(mock_openai_client, setup_model, mock_f
 
     # Assertions to ensure the mock was called as expected
     setup_model.client.chat.completions.create.assert_called_once_with(
-        messages=[{'role': 'user', 'content': f'{base_promt}\n{test_code}'}],
+        messages=[{'role': 'user', 'content': 'test prompt with code: binary code would go here\nend'}],
         model="test-model",
         temperature=0.5
     )
