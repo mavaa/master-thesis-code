@@ -42,16 +42,15 @@ def run_pipeline_evaluate(pipeline, args, eval_path):
         pipeline.generate_and_save_predictions(executable_filename)
         print()
 
-    evaluate(pipeline)
+    evaluate(pipeline, args, eval_path)
 
-def evaluate(pipeline):
+def evaluate(pipeline, args, eval_path):
     print("Evaluating...")
     results = pipeline.evaluate()
     print("Results:")
     for key, score in results.items():
         print("==")
         print(key)
-        print(score)
         for score_key, score_value in score.items():
             print(f"{score_key}: {score_value:.2%}")
         print("==")
@@ -59,14 +58,6 @@ def evaluate(pipeline):
     # Save results to a file
     with open(os.path.join(eval_path, args.results_pkl), 'wb') as f:
         pickle.dump(results, f)
-
-    print(f"Type of results: {type(results)}")
-    for key, value in results.items():
-        print(f"Key: {key}, Type of value: {type(value)}")
-
-    # Ensure results is a dictionary of dictionaries
-    if not all(isinstance(value, dict) for value in results.values()):
-        raise ValueError("Each value in the results dictionary must be a dictionary.")
 
     # Define headers for the LaTeX table
     headers = ["Metric"] + list(results.keys())
@@ -101,10 +92,10 @@ if __name__ == '__main__':
     parser.add_argument('-r', '--results-pkl', type=str, default='results.pkl', help='Results filename')
     parser.add_argument('-l', '--results-latex', type=str, default='table.tex', help='Results latex table filename')
     parser.add_argument('-p', '--plot-filename', type=str, default='plot.png', help='Plot graph filename')
-    parser.add_argument('-m', '--model', type=str, default='gpt-3.5-turbo', help='Model name')
+    parser.add_argument('-m', '--models', type=str, nargs='+', default=['gpt-3.5-turbo'], help='List of model names')
     parser.add_argument('-s', '--strip', action='store_true', help='Strip the binary during compilation')
     parser.add_argument('-x', '--disassembler', choices=['objdump', 'r2'], default='r2', help='Disassembler to run')
-    parser.add_argument('command', choices=['clean', 'prepare', 'print', 'run', 'evaluate'], help='Command to execute')
+    parser.add_argument('command', choices=['clean', 'prepare', 'print', 'full-run', 'evaluate'], default='full-run', help='Command to execute')
 
     args = parser.parse_args()
 
@@ -114,8 +105,10 @@ if __name__ == '__main__':
 
     r2_runner = R2Runner(subprocess)
 
-    openai_predictor = OpenAIModelPredictor(os.environ.get("OPENAI_API_KEY"), args.model, 0, args.base_prompt)
-    decompile_predictor = R2DecompilePredictor(r2_runner)
+    predictors = [
+        OpenAIModelPredictor(os.environ.get("OPENAI_API_KEY"), model, 0, args.base_prompt)
+        for model in args.models
+        ] + [R2DecompilePredictor(r2_runner)]
 
     compiler = GCCCompiler(subprocess, args.strip)
 
@@ -132,9 +125,9 @@ if __name__ == '__main__':
     evaluator = CodeBleuEvaluator(calc_codebleu)
 
     pipeline = Pipeline(
-            compiler = compiler,
+            compiler=compiler,
             disassembler=disassembler,
-            predictors=[openai_predictor, decompile_predictor],
+            predictors=predictors,
             evaluator=evaluator,
             data_path=args.data_path)
 
@@ -149,8 +142,8 @@ if __name__ == '__main__':
         pipeline.init_folders()
         run_pipeline_print(pipeline, args)
     elif args.command == 'evaluate':
-        evaluate(pipeline)
-    elif args.command == 'run':
+        evaluate(pipeline, args, eval_path)
+    elif args.command == 'full-run':
         pipeline.clean()
         pipeline.init_folders()
         run_pipeline_evaluate(pipeline, args, eval_path)
