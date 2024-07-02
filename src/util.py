@@ -20,25 +20,38 @@ def codebleu_create_graph(pkl_file_path, png_file_path, show_plot=False):
     df.reset_index(inplace=True)
     df = df.rename(columns={'index': 'Category'})
 
+    codebleu_row = df[df['Category'] == 'codebleu']
+    df = df[df['Category'] != 'codebleu']
+    df = pd.concat([df, codebleu_row], ignore_index=True)
+
+    def transform_label(label):
+        if label != 'codebleu':
+            label = label.replace('_match_score', '')
+            label = label.replace('_', ' ')
+            label = label.title()
+        return label
+
+    df['Category'] = df['Category'].apply(transform_label)
+
     plt.figure(figsize=(10, 6))
 
     for column in df.columns[1:]:
-        plt.plot(df['Category'], df[column], marker='o', label=column)
+        line, = plt.plot(df['Category'][:-1], df[column][:-1], marker='o', label=column, linestyle='-')
+        plt.plot(df['Category'][-2:], df[column][-2:], marker='o', linestyle='--', color=line.get_color())
+        plt.scatter(df['Category'].iloc[-1], df[column].iloc[-1], color=line.get_color(), s=100, edgecolor='black', zorder=5)
 
     plt.title('CodeBLEU performance')
-    plt.xlabel('Categories')
     plt.ylabel('Scores')
 
     ax = plt.gca()
-    xticks = ax.get_xticks()
-    xticklabels = ax.get_xticklabels()
+    xticks = range(len(df['Category']))
+    xticklabels = list(df['Category'])
 
     if xticklabels:
-        xticklabels = [label.get_text() for label in xticklabels]
-        xticklabels[0] = "CodeBLEU"
+        xticklabels[-1] = "CodeBLEU"
         ax.set_xticks(xticks)
         ax.set_xticklabels(xticklabels)
-        ax.get_xticklabels()[0].set_fontweight('bold')
+        ax.get_xticklabels()[-1].set_fontweight('bold')
 
     ax.yaxis.set_major_formatter(FuncFormatter(lambda y, _: f'{int(y * 100)}%'))
     ax.yaxis.set_major_locator(MultipleLocator(0.05))
