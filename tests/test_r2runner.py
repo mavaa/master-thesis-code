@@ -68,3 +68,16 @@ def test_r2_run(tmp_path):
     r2_runner.run(command, test_sample_path, out_path)
 
     assert os.path.exists(out_path), f"r2 output file ({out_path}) does not exist after r2 execution."
+
+def test_r2_run_str():
+    mock_subprocess = MagicMock()
+    mock_result = MagicMock()
+    mock_result.stdout = "It works!"
+    mock_result.stderr = "It doesn't work!"
+    mock_subprocess.run.return_value = mock_result
+    r2_runner = R2Runner(mock_subprocess)
+
+    result, error = r2_runner.run_str(command, test_sample_path)
+
+    assert result == mock_result.stdout, f"Unexpected result: {result}"
+    assert error == mock_result.stderr, f"Unexpected error: {result}"

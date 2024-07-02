@@ -5,7 +5,6 @@ import re
 import subprocess
 from src.pipeline import Pipeline
 from src.r2runner import R2Runner
-from src.decompiler.r2ghidradecompiler import R2GdhidraDecompiler
 from src.disassembler.objdumpdisassembler import ObjdumpDisassembler
 from src.compiler.gcccompiler import GCCCompiler
 from src.util import create_folder_if_not_exists, read_whole_file

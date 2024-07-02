@@ -11,3 +11,8 @@ class R2Runner:
         with open(output_path, 'w') as output_file:
             self.subprocess.run([self.r2_path, f'-{self.r2_default_flags}', command, executable_path],
                                 stdout=output_file, stderr=error, check=True)
+
+    def run_str(self, command, executable_path):
+        result = self.subprocess.run([self.r2_path, f'-{self.r2_default_flags}', command, executable_path],
+                                     stdout=self.subprocess.PIPE, stderr=self.subprocess.PIPE, text=True)
+        return result.stdout, result.stderr
