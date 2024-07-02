@@ -6,7 +6,7 @@ from src.util import read_whole_file, codebleu_create_graph, codebleu_create_lat
 if __name__ == '__main__':
     base_path = "data_codebleu_examples"
     reference_file = os.path.join(base_path, "reference.txt")
-    eval_path = "evaluation_results"
+    eval_path = os.path.join(base_path, "evaluation_results")
     os.makedirs(eval_path, exist_ok=True)
 
     reference_code = read_whole_file(reference_file)

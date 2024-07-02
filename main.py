@@ -7,7 +7,7 @@ from codebleu import calc_codebleu
 from src.compiler.gcccompiler import GCCCompiler
 from src.disassembler.objdumpdisassembler import ObjdumpDisassembler
 from src.disassembler.r2disassembler import R2Disassembler
-from src.decompiler.r2ghidradecompiler import R2GdhidraDecompiler
+from src.predictor.r2decompilepredictor import R2DecompilePredictor
 from src.evaluator.codebleuevaluator import CodeBleuEvaluator
 from src.predictor.openaimodelpredictor import OpenAIModelPredictor
 from src.pipeline import Pipeline
@@ -42,35 +42,39 @@ def run_pipeline_evaluate(pipeline, args, eval_path):
         pipeline.generate_and_save_predictions(executable_filename)
         print()
 
-    print("Evaluating LLM...")
-    result_llm = pipeline.evaluate_llm()
-    print("Results:")
-    for key, value in result_llm.items():
-        print(f"{key}: {value:.2%}")
+    evaluate(pipeline)
 
-    print()
-    print("Evaluating R2...")
-    result_r2 = pipeline.evaluate_r2()
+def evaluate(pipeline):
+    print("Evaluating...")
+    results = pipeline.evaluate()
     print("Results:")
-    for key, value in result_r2.items():
-        print(f"{key}: {value:.2%}")
-
-    results = {
-        'LLM': result_llm,
-        'R2': result_r2
-    }
+    for key, score in results.items():
+        print("==")
+        print(key)
+        print(score)
+        for score_key, score_value in score.items():
+            print(f"{score_key}: {score_value:.2%}")
+        print("==")
 
     # Save results to a file
     with open(os.path.join(eval_path, args.results_pkl), 'wb') as f:
         pickle.dump(results, f)
 
+    print(f"Type of results: {type(results)}")
+    for key, value in results.items():
+        print(f"Key: {key}, Type of value: {type(value)}")
+
+    # Ensure results is a dictionary of dictionaries
+    if not all(isinstance(value, dict) for value in results.values()):
+        raise ValueError("Each value in the results dictionary must be a dictionary.")
+
     # Define headers for the LaTeX table
-    headers = ["Metric", "LLM Score", "R2 Score"]
+    headers = ["Metric"] + list(results.keys())
 
     codebleu_create_latex_table(
         os.path.join(eval_path, args.results_latex),
-        [result_llm, result_r2],
-        ["LLM", "R2"],
+        results.values(),
+        results.keys(),
         headers)
 
     codebleu_create_graph(
@@ -100,7 +104,7 @@ if __name__ == '__main__':
     parser.add_argument('-m', '--model', type=str, default='gpt-3.5-turbo', help='Model name')
     parser.add_argument('-s', '--strip', action='store_true', help='Strip the binary during compilation')
     parser.add_argument('-x', '--disassembler', choices=['objdump', 'r2'], default='r2', help='Disassembler to run')
-    parser.add_argument('command', choices=['clean', 'prepare', 'print', 'evaluate'], help='Command to execute')
+    parser.add_argument('command', choices=['clean', 'prepare', 'print', 'run', 'evaluate'], help='Command to execute')
 
     args = parser.parse_args()
 
@@ -108,13 +112,12 @@ if __name__ == '__main__':
 
     create_folder_if_not_exists(eval_path)
 
-    openai_predictor = OpenAIModelPredictor(os.environ.get("OPENAI_API_KEY"), args.model, 0, args.base_prompt)
-
-    compiler = GCCCompiler(subprocess, args.strip)
-
     r2_runner = R2Runner(subprocess)
 
-    decompiler = R2GdhidraDecompiler(r2_runner)
+    openai_predictor = OpenAIModelPredictor(os.environ.get("OPENAI_API_KEY"), args.model, 0, args.base_prompt)
+    decompile_predictor = R2DecompilePredictor(r2_runner)
+
+    compiler = GCCCompiler(subprocess, args.strip)
 
     disassembler = None
 
@@ -131,7 +134,7 @@ if __name__ == '__main__':
     pipeline = Pipeline(
             compiler = compiler,
             disassembler=disassembler,
-            predictors=[openai_predictor],
+            predictors=[openai_predictor, decompile_predictor],
             evaluator=evaluator,
             data_path=args.data_path)
 
@@ -146,6 +149,8 @@ if __name__ == '__main__':
         pipeline.init_folders()
         run_pipeline_print(pipeline, args)
     elif args.command == 'evaluate':
+        evaluate(pipeline)
+    elif args.command == 'run':
         pipeline.clean()
         pipeline.init_folders()
         run_pipeline_evaluate(pipeline, args, eval_path)
