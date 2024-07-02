@@ -13,7 +13,7 @@ def read_whole_file(file_path):
         code = file.read()
     return code
 
-def codebleu_create_graph(pkl_file_path, png_file_path):
+def codebleu_create_graph(pkl_file_path, png_file_path, show_plot=False):
     data = pd.read_pickle(pkl_file_path)
 
     df = pd.DataFrame(data)
@@ -46,7 +46,9 @@ def codebleu_create_graph(pkl_file_path, png_file_path):
     plt.legend()
     plt.grid(True)
     plt.savefig(png_file_path)
-    plt.show()
+
+    if show_plot:
+        plt.show()
 
 def codebleu_create_latex_table(tex_file, results, result_keys, headers):
     table_data = []

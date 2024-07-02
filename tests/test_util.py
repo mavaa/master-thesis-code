@@ -18,7 +18,11 @@ def test_read_whole_file(tmp_path):
     read_content = read_whole_file(test_file)
     assert read_content == test_content
 
-def test_codebleu_create_graph(tmp_path):
+@pytest.mark.parametrize("show_plot", [
+    (True),
+    (False)
+])
+def test_codebleu_create_graph(tmp_path, show_plot):
     # Create sample data and save it as a pickle file
     data = {
         'LLM': {'Metric1': 0.9, 'Metric2': 0.85, 'Metric3': 0.88},
@@ -31,8 +35,13 @@ def test_codebleu_create_graph(tmp_path):
     png_file_path = tmp_path / "results.png"
 
     # Use patch to mock plt.show() during the test
-    with patch("matplotlib.pyplot.show"):
-        codebleu_create_graph(pkl_file_path, png_file_path)
+    with patch("matplotlib.pyplot.show") as mock_show:
+        codebleu_create_graph(pkl_file_path, png_file_path, show_plot=show_plot)
+
+        if show_plot:
+            mock_show.assert_called_once()
+        else:
+            mock_show.assert_not_called()
 
     assert png_file_path.exists()
     assert png_file_path.is_file()
