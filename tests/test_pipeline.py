@@ -51,6 +51,7 @@ def setup_pipeline(tmp_path, compiler, disassembler, predictors, evaluator):
             disassembler=disassembler,
             predictors=predictors,
             evaluator=evaluator,
+            sources_path=sources_path,
             data_path=data_path)
     pipeline.init_folders()
 

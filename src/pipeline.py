@@ -10,14 +10,14 @@ class Pipeline:
             disassembler,
             predictors,
             evaluator,
+            sources_path="data/sources",
             data_path="data"):
         self.compiler = compiler
         self.disassembler = disassembler
         self.predictors = predictors
         self.evaluator = evaluator
-        self.data_path = data_path
 
-        self.sources_path = os.path.join(data_path, "sources")
+        self.sources_path = sources_path
         self.builds_path = os.path.join(data_path, "builds")
         self.disassemblies_path = os.path.join(data_path, "disassemblies")
         self.predictions_path = os.path.join(data_path, "predictions")

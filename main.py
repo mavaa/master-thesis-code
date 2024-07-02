@@ -105,10 +105,27 @@ def compile_disassemble_reference(pipeline, source_file):
     pipeline.add_source_to_dataset(source_file)
     return executable_filename
 
+def determine_dataset_size(sources_path):
+    if sources_path == 'data/sources':
+        return 'small'
+    else:
+        return 'large'
+
+def determine_models_used(models):
+    if len(models) > 1:
+        return 'multiple'
+    else:
+        return models[0]
+
+def determine_strip(strip):
+    return 'strip' if strip else 'nostrip'
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Run pipeline commands.')
     parser.add_argument('-b', '--base-prompt', type=str, default=default_llm_prompt, help='Base prompt to send to LLMs. Use `{disassembly}` in the string where you want to place the disassembled code.')
     parser.add_argument('-d', '--data-path', type=str, default='data', help='Data directory')
+    parser.add_argument('-a', '--auto-data-path', action='store_true', help='Generate the data path automatically from flags')
+    parser.add_argument('-i', '--sources-path', type=str, default='data/sources', help='Source code directory')
     parser.add_argument('-r', '--results-pkl', type=str, default='results.pkl', help='Results filename')
     parser.add_argument('-l', '--results-latex', type=str, default='table.tex', help='Results latex table filename')
     parser.add_argument('-p', '--plot-filename', type=str, default='plot.png', help='Plot graph filename')
@@ -119,7 +136,18 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    eval_path = os.path.join(args.data_path, 'evaluation')
+    data_path = args.data_path
+
+    # This is pretty specific for generating output folders to be used for the thesis report
+    if args.auto_data_path:
+        dataset_size = determine_dataset_size(args.sources_path)
+        models_used = determine_models_used(args.models)
+        strip_status = determine_strip(args.strip)
+
+        data_path = f"data_{dataset_size}_{models_used}_{strip_status}_{args.disassembler}/"
+        print(f"Auto data path set to: {data_path}")
+
+    eval_path = os.path.join(data_path, 'evaluation')
 
     create_folder_if_not_exists(eval_path)
 
@@ -149,7 +177,8 @@ if __name__ == '__main__':
             disassembler=disassembler,
             predictors=predictors,
             evaluator=evaluator,
-            data_path=args.data_path)
+            sources_path=args.sources_path,
+            data_path=data_path)
 
     if args.command == 'clean':
         pipeline.clean()
