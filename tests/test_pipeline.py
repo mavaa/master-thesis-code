@@ -11,7 +11,7 @@ from src.util import create_folder_if_not_exists, read_whole_file
 from shutil import copyfile
 from types import SimpleNamespace
 from pathlib import Path
-from unittest.mock import MagicMock, mock_open, patch
+from unittest.mock import MagicMock, mock_open, patch, call
 
 executable_filename = "helloworld"
 source_filename = f"{executable_filename}.c"
@@ -121,6 +121,30 @@ def test_generate_and_save_predictions(pipeline_factory):
         prediction_file_path = os.path.join(pipeline.predictions_path, f'{predictor.name}_{executable_filename}.c')
         with open(prediction_file_path, 'r') as file:
             assert file.read() == mock_prediction_expected_result
+
+def test_generate_and_save_predictions_with_callback(pipeline_factory):
+    pipeline = pipeline_factory()
+    pipeline.compile(source_filename, executable_filename)
+    pipeline.disassemble(executable_filename)
+    mock_callback = MagicMock()
+    pipeline.generate_and_save_predictions(executable_filename, status_callback=mock_callback)
+
+    assert os.path.exists(pipeline.predictions_path), "Predictions folder does not exist."
+
+    for predictor in pipeline.predictors:
+        prediction_file_path = os.path.join(pipeline.predictions_path, f'{predictor.name}_{executable_filename}.c')
+        with open(prediction_file_path, 'r') as file:
+            assert file.read() == mock_prediction_expected_result
+
+    # Verify the callback was called with the correct arguments
+    expected_calls = []
+    for predictor in pipeline.predictors:
+        expected_calls.append(call.__bool__())
+        expected_calls.append(((0, predictor.name),))
+        expected_calls.append(call.__bool__())
+        expected_calls.append(((1, predictor.name),))
+
+    mock_callback.assert_has_calls(expected_calls, any_order=False)
 
 @pytest.mark.parametrize("source,expected", [
     (["hey", "there", "you"], "hey there you"),

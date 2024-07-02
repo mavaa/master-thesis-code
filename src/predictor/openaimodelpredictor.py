@@ -1,4 +1,5 @@
 from openai import OpenAI
+from ..util import read_whole_file
 
 class OpenAIModelPredictor:
     def __init__(self, api_key, model, temperature, base_prompt):
@@ -10,12 +11,14 @@ class OpenAIModelPredictor:
         self.base_prompt = base_prompt
         self.name = f"OpenAI-{model}"
 
-    def generate_prediction(self, binary_path, disassembly_code):
+    def generate_prediction(self, binary_path, disassembly_path):
+        disassembly = read_whole_file(disassembly_path)
+        prompt = f"{self.base_prompt}\n{disassembly}"
         chat_completion = self.client.chat.completions.create(
             messages=[
                 {
                     "role": "user",
-                    "content": f"{self.base_prompt}\n{disassembly_code}",
+                    "content": prompt,
                 }
             ],
             model=self.model,

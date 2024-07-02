@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch, MagicMock, mock_open
 from src.predictor.openaimodelpredictor import OpenAIModelPredictor
 
 api_key = "replace_me"
@@ -29,9 +29,15 @@ def mock_openai_client():
         mock_instance.chat.completions.create.return_value = mock_chat_completion
         yield mock
 
-def test_openaimodel_generate_prediction(mock_openai_client, setup_model):
+@pytest.fixture
+def mock_file_open():
+    m = mock_open(read_data=test_code)
+    with patch('builtins.open', m):
+        yield m
+
+def test_openaimodel_generate_prediction(mock_openai_client, setup_model, mock_file_open):
     # Call the method
-    response = setup_model.generate_prediction("binary_filename.o", test_code)
+    response = setup_model.generate_prediction("binary_filename.o", "path/to/text_file.txt")
 
     # Assertions to ensure the mock was called as expected
     setup_model.client.chat.completions.create.assert_called_once_with(

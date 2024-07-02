@@ -65,9 +65,13 @@ class Pipeline:
 
         return prediction
 
-    def generate_and_save_predictions(self, executable):
+    def generate_and_save_predictions(self, executable, status_callback=None):
         for predictor in self.predictors:
+            if status_callback:
+                status_callback(0, predictor.name)
             self.generate_prediction(executable, predictor)
+            if status_callback:
+                status_callback(1, predictor.name)
 
     def put_code_on_single_line(self, input_file):
         return ' '.join([line.strip() for line in input_file if line.strip()])

@@ -34,15 +34,20 @@ def run_pipeline_print(pipeline, args):
         print()
         input()
 
-# Run predictions and evaluate
 def run_pipeline_evaluate(pipeline, args, eval_path):
     for source_file in pipeline.get_sources():
         executable_filename = compile_disassemble_reference(pipeline, source_file)
-        print("Generating prediction...")
-        pipeline.generate_and_save_predictions(executable_filename)
+        print("Generating predictions...")
+        pipeline.generate_and_save_predictions(executable_filename, status_callback=print_prediction_status)
         print()
 
     evaluate(pipeline, args, eval_path)
+
+def print_prediction_status(status, predictor_name):
+    if status == 0:
+        print(f"Generating for {predictor_name}...", end='', flush=True)
+    else:
+        print(" Done!")
 
 def evaluate(pipeline, args, eval_path):
     print("Evaluating...")
