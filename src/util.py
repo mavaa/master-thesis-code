@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 import os
 import pandas as pd
+from matplotlib.ticker import FuncFormatter, MultipleLocator
 from tabulate import tabulate
 
 def create_folder_if_not_exists(folder):
@@ -31,9 +32,23 @@ def codebleu_create_graph(pkl_file_path, png_file_path):
         plt.plot(df['Category'], df[column], marker='o', label=column)
 
     # Add titles and labels
-    plt.title('Algorithm Performance Across Categories')
+    plt.title('CodeBLEU performance')
     plt.xlabel('Categories')
     plt.ylabel('Scores')
+
+    ax = plt.gca()
+    xticks = ax.get_xticks()
+    xticklabels = ax.get_xticklabels()
+
+    if xticklabels:
+        xticklabels = [label.get_text() for label in xticklabels]
+        xticklabels[0] = "CodeBLEU"
+        ax.set_xticks(xticks)
+        ax.set_xticklabels(xticklabels)
+        ax.get_xticklabels()[0].set_fontweight('bold')
+
+    ax.yaxis.set_major_formatter(FuncFormatter(lambda y, _: f'{int(y * 100)}%'))
+    ax.yaxis.set_major_locator(MultipleLocator(0.05))
 
     # Add a legend
     plt.legend()
