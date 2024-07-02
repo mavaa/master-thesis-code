@@ -1,8 +1,9 @@
-import sys
-import os
 import argparse
+import os
 import pickle
+import shutil
 import subprocess
+import sys
 from codebleu import calc_codebleu
 from src.compiler.gcccompiler import GCCCompiler
 from src.disassembler.objdumpdisassembler import ObjdumpDisassembler
@@ -182,6 +183,10 @@ if __name__ == '__main__':
 
     if args.command == 'clean':
         pipeline.clean()
+        if os.path.isdir(eval_path):
+            shutil.rmtree(eval_path)
+        if os.path.isdir(data_path) and not os.listdir(data_path):
+            os.rmdir(data_path)
     elif args.command == 'prepare':
         pipeline.clean()
         pipeline.init_folders()
