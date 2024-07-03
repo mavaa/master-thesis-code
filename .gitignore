@@ -1,10 +1,6 @@
 .venv
 __pycache__/
-data/builds/
-data/disassemblies/
-data/evaluation/
-data/predictions/
-data/references.txt
 .coverage
 .env
-data_*/
+out/
+sources/external/

@@ -124,9 +124,9 @@ def determine_strip(strip):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Run pipeline commands.')
     parser.add_argument('-b', '--base-prompt', type=str, default=default_llm_prompt, help='Base prompt to send to LLMs. Use `{disassembly}` in the string where you want to place the disassembled code.')
-    parser.add_argument('-d', '--data-path', type=str, default='data', help='Data directory')
-    parser.add_argument('-a', '--auto-data-path', action='store_true', help='Generate the data path automatically from flags')
-    parser.add_argument('-i', '--sources-path', type=str, default='data/sources', help='Source code directory')
+    parser.add_argument('-d', '--data-path', type=str, default='out/data', help='Output data directory')
+    parser.add_argument('-a', '--auto-data-path', action='store_true', help='Generate the data path automatically from flags. This will override the -d flag.')
+    parser.add_argument('-i', '--sources-path', type=str, default='sources/small_test', help='Source code input directory')
     parser.add_argument('-r', '--results-pkl', type=str, default='results.pkl', help='Results filename')
     parser.add_argument('-l', '--results-latex', type=str, default='table.tex', help='Results latex table filename')
     parser.add_argument('-p', '--plot-filename', type=str, default='plot.png', help='Plot graph filename')

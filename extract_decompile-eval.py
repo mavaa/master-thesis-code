@@ -1,6 +1,7 @@
 import json
 import os
 import requests
+from pathlib import Path
 from src.util import create_folder_if_not_exists
 
 def download_json(url, local_path):
@@ -16,9 +17,9 @@ def extract_source(json_file_path, sources_path):
         data = json.load(file)
 
     for task in data:
-        if task['type'] == "O0":
-            task_id = task['task_id']
-            c_func = task['c_func']
+        if task["type"] == "O0":
+            task_id = task["task_id"]
+            c_func = task["c_func"]
 
             formatted_task_id = f"{task_id:03d}"
 
@@ -29,12 +30,12 @@ def extract_source(json_file_path, sources_path):
 
             print(f"Saved {filename}")
 
-base_path = 'data_decompile_eval'
+base_path = Path("sources") / "external" / "data_decompile_eval"
 sources_path = os.path.join(base_path, "sources")
 
 # LLM4Decompile decompile-eval test dataset
-json_url = 'https://raw.githubusercontent.com/albertan017/LLM4Decompile/main/decompile-eval/decompile-eval.json'
-json_file_path = os.path.join(base_path, 'decompile-eval.json')
+json_url = "https://raw.githubusercontent.com/albertan017/LLM4Decompile/main/decompile-eval/decompile-eval.json"
+json_file_path = os.path.join(base_path, "decompile-eval.json")
 
 create_folder_if_not_exists(base_path)
 create_folder_if_not_exists(sources_path)
