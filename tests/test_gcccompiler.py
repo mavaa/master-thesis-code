@@ -30,7 +30,7 @@ def test_compile_integration(tmp_path, should_strip):
 
     compiler = GCCCompiler(subprocess, should_strip)
 
-    compiler.compile("data/sources/helloworld.c", output_path)
+    compiler.compile("sources/small_test/helloworld.c", output_path)
 
     assert os.path.exists(output_path), f"Binary file {output_path} not created"
 

@@ -43,7 +43,7 @@ def setup_pipeline(tmp_path, compiler, disassembler, predictors, evaluator):
     sources_path = os.path.join(data_path, "sources")
     create_folder_if_not_exists(sources_path)
 
-    copyfile(os.path.join("data/sources/", source_filename),
+    copyfile(os.path.join("sources/small_test/", source_filename),
              os.path.join(sources_path, source_filename))
 
     pipeline = Pipeline(
