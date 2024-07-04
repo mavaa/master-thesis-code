@@ -48,16 +48,15 @@ def test_codebleu_create_graph(tmp_path, show_plot):
 
 def test_codebleu_create_latex_table(tmp_path):
     eval_path = tmp_path
-    results = [
-        {'Metric1': 0.9, 'Metric2': 0.85, 'Metric3': 0.88},
-        {'Metric1': 0.92, 'Metric2': 0.87, 'Metric3': 0.89}
-    ]
-    result_keys = ['LLM', 'R2']
-    headers = ["Metric"] + result_keys
+    results = {
+        'LLM': {'Metric1': 0.9, 'Metric2': 0.85, 'Metric3': 0.88},
+        'R2': {'Metric1': 0.92, 'Metric2': 0.87, 'Metric3': 0.89}
+    }
+    headers = ["Metric"] + list(results.keys())
     filename = "results.tex"
     latex_file_path = eval_path / filename
 
-    codebleu_create_latex_table(latex_file_path, results, result_keys, headers)
+    codebleu_create_latex_table(latex_file_path, results, headers)
 
     assert latex_file_path.exists()
     assert latex_file_path.is_file()

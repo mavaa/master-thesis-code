@@ -63,14 +63,15 @@ def codebleu_create_graph(pkl_file_path, png_file_path, show_plot=False):
     if show_plot:
         plt.show()
 
-def codebleu_create_latex_table(tex_file, results, result_keys, headers):
+def codebleu_create_latex_table(tex_file, results, headers):
     table_data = []
 
-    all_keys = set().union(*(result.keys() for result in results))
+    first_result = next(iter(results.values()))
+    ordered_keys = list(first_result.keys())
 
-    for key in all_keys:
+    for key in ordered_keys:
         row = [key]
-        for result in results:
+        for result in results.values():
             if key in result:
                 row.append(f"{result[key]:.2%}")
         table_data.append(row)

@@ -85,8 +85,7 @@ def evaluate(pipeline, args, eval_path):
 
     codebleu_create_latex_table(
         os.path.join(eval_path, args.results_latex),
-        results.values(),
-        results.keys(),
+        results,
         headers)
 
     codebleu_create_graph(
