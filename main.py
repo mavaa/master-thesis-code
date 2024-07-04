@@ -107,7 +107,7 @@ def compile_disassemble_reference(pipeline, source_file):
     return executable_filename
 
 def determine_dataset_size(sources_path):
-    if sources_path == 'data/sources':
+    if sources_path == 'sources/small_test':
         return 'small'
     else:
         return 'large'
