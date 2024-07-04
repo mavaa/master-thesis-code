@@ -145,7 +145,7 @@ if __name__ == '__main__':
         models_used = determine_models_used(args.models)
         strip_status = determine_strip(args.strip)
 
-        data_path = f"data_{dataset_size}_{models_used}_{strip_status}_{args.disassembler}/"
+        data_path = f"out/data_{dataset_size}_{models_used}_{strip_status}_{args.disassembler}/"
         print(f"Auto data path set to: {data_path}")
 
     eval_path = os.path.join(data_path, 'evaluation')
