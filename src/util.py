@@ -63,18 +63,30 @@ def codebleu_create_graph(pkl_file_path, png_file_path, show_plot=False):
     if show_plot:
         plt.show()
 
+def escape_latex_special_chars(text):
+    """Escape LaTeX special characters in a string."""
+    return text.replace('_', '\\_').replace('%', '\\%')
+
 def codebleu_create_latex_table(tex_file, results, headers):
     table_data = []
+
+    headers = [escape_latex_special_chars(header) for header in headers]
 
     first_result = next(iter(results.values()))
     ordered_keys = list(first_result.keys())
 
+    # Move "codebleu" to the end if it exists
+    if "codebleu" in ordered_keys:
+        ordered_keys.remove("codebleu")
+        ordered_keys.append("codebleu")
+
     for key in ordered_keys:
-        row = [key]
+        escaped_key = escape_latex_special_chars(key)
+        row = [f"\\textbf{{{escaped_key}}}" if key == "codebleu" else escaped_key]
         for result in results.values():
-            if key in result:
-                row.append(f"{result[key]:.2%}")
+            value = escape_latex_special_chars(f"{result[key]:.2%}")
+            row.append(f"\\textbf{{{value}}}" if key == "codebleu" else value)
         table_data.append(row)
 
     with open(tex_file, 'w') as f:
-        f.write(tabulate(table_data, headers, tablefmt="latex"))
+        f.write(tabulate(table_data, headers, tablefmt="latex_raw"))
