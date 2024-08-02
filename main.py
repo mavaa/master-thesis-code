@@ -15,20 +15,8 @@ from src.pipeline import Pipeline
 from src.r2runner import R2Runner
 from src.util import create_folder_if_not_exists, codebleu_create_graph, codebleu_create_latex_table
 
-default_llm_prompt="""
-**Prompt:**
-
-Below is a snippet of assembly code. Please reconstruct the original C code as accurately as possible and provide only the code block without any explanations or additional text.
-
-**Assembly Code:**
-```
-{disassembly}
-```
-
-**Reconstructed C Code:**
-```c
-
-"""
+default_llm_prompt="""Reconstruct the original C source code from the following disassembly:
+{disassembly}"""
 
 def run_pipeline_prepare(pipeline, args):
     for source_file in pipeline.get_sources():
