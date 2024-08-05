@@ -10,6 +10,8 @@ pip3
 pkg-config # Required to install r2ghidra
 ```
 
+TODO: Add more packages
+
 In addition a .env file should be created with an OpenAI API key, looking like:
 ```
 export OPENAI_API_KEY="key here"
