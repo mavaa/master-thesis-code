@@ -1,4 +1,6 @@
-# Initial process
+# Code for master thesis "Using Large Language Models for Binary Decompilation"
+
+Python code project for my master thesis which can be found here: [Using Large Language Models for Binary Decompilation](https://hdl.handle.net/11250/3168005)
 
 ## Setup
 
