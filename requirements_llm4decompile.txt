@@ -1,0 +1,7 @@
+tqdm
+transformers
+loguru
+tqdm
+text_generation
+vllm
+flash-attn

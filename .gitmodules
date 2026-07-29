@@ -1,0 +1,3 @@
+[submodule "submodules/llm4decompile"]
+	path = submodules/llm4decompile
+	url = https://github.com/albertan017/LLM4Decompile
